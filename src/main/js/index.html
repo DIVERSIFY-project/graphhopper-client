@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="script/canvasjs.min.js"></script>
+	<script src="https://cdn.socket.io/socket.io-1.3.5.js"></script>
+    <script type="text/javascript">
+
+
+
+window.onload = function () {
+    var LBMSock = new WebSocket("ws://localhost:8099");
+
+
+        LBMSock.onmessage = function(evt) {
+            var received = JSON.parse(evt.data);
+            if(data.type == "init") {
+                var chart = new CanvasJS.Chart("chartContainer", received);
+                chart.render();
+            } else {
+                var newDataPoints = received.data[0].dataPoints;
+                for(i = 0; i < dataPoints.length; i++) {
+                    chart.options.data[0].dataPoints.push(newDataPoints[i]);
+                }
+                newDataPoints = received.data[1].dataPoints;
+                for(i = 0; i < dataPoints.length; i++) {
+                    chart.options.data[1].dataPoints.push(newDataPoints[i]);
+                }
+                newDataPoints = received.data[2].dataPoints;
+                for(i = 0; i < dataPoints.length; i++) {
+                    chart.options.data[2].dataPoints.push(newDataPoints[i]);
+                }
+	            chart.render();
+            }
+
+        }
+    };
+
+	<!--$("#addDataPoint").click(function () {-->
+
+	<!--var length = chart.options.data[0].dataPoints.length;	-->
+	<!--chart.options.data[0].dataPoints.push({ y: 25 - Math.random() * 10});-->
+	<!--chart.render();-->
+	<!--});-->
+<!--}-->
+</script>
+</head>
+<body>
+<div id="chartContainer" style="width:100%; height:280px"></div>
+<button id="addDataPoint">Add DataPoint</button>
+</body>
+
+</html>

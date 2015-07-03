@@ -1,0 +1,22 @@
+{"platforms":[{
+    "host":"http://192.168.59.103:8080/", 
+    "services":[
+        {"name":"weighting", "alternatives":["fastest"]},
+        {"name":"vehicle", "alternatives":["car", "bike"]},
+        {"name":"point", "alternatives":[ "53.3747%2C-6.312332", "53.374317%2C-6.312332", "53.313647%2C-6.242294"]},
+        {"name":"point", "alternatives":[ "53.3747%2C-6.312332", "53.374317%2C-6.312332", "53.313647%2C-6.242294"]}
+    ]},{
+    "host":"http://sgh.barais.fr/",
+    "services":[
+    {"name":"weighting", "alternatives":["fastest"]},
+    {"name":"vehicle", "alternatives":["bike"]},
+    {"name":"point", "alternatives":[ "53.374317%2C-6.312332", "53.313647%2C-6.242294"]},
+    {"name":"point", "alternatives":[ "53.3747%2C-6.312332", "53.374317%2C-6.312332", "53.313647%2C-6.242294"]}
+    ]}],
+"services":[
+    {"name":"weighting", "alternatives":["fastest"]},
+    {"name":"vehicle", "alternatives":["car", "bike"]},
+    {"name":"point", "alternatives":[ "53.3747%2C-6.312332", "53.374317%2C-6.312332", "53.313647%2C-6.242294"]},
+    {"name":"point", "alternatives":[ "53.3747%2C-6.312332", "53.374317%2C-6.312332", "53.313647%2C-6.242294"]}
+    ]
+}
