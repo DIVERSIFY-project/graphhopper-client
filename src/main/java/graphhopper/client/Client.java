@@ -11,7 +11,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,16 +24,20 @@ import java.util.stream.Collectors;
  */
 public class Client extends Thread {
 
+    String name;
     protected List<VariationPoint> services;
     protected Set<Platform> platforms;
-    protected String REQUESTED_METHOD = "restful-graphhopper-1.0/?";
+    protected String REQUESTED_METHOD = "restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
     protected HttpClient httpClient;
+    String header;
+
 
     public Client(String fileName) throws IOException, JSONException {
         parse(fileName);
         initHttpClient(10);
         Info.info().addArchitecture(services, platforms);
-
+        name = fileName.split("/")[fileName.split("/").length - 1].split("\\.")[0];
+        header = "[" + name + "] ";
     }
 
     protected List<IAlternative> createRequest() {
@@ -43,7 +46,6 @@ public class Client extends Thread {
                         .findAny()
                         .get())
                 .collect(Collectors.toList());
-
     }
 
     protected List<Platform> selectPlatforms(List<IAlternative> request) {
@@ -54,7 +56,7 @@ public class Client extends Thread {
 
     }
 
-    public void run()  {
+    public void run() {
         while (true) {
             try {
                 Thread.sleep(500);
@@ -72,7 +74,7 @@ public class Client extends Thread {
             for (Platform platform : selectedPlatforms) {
 //                sendRequest(request, platform);
 //                if(random.nextBoolean()) {
-                if(sendRequest(request, platform)) {
+                if (sendRequest(request, platform)) {
                     platformsTry.add(platform);
                     break;
                 } else {
@@ -82,19 +84,20 @@ public class Client extends Thread {
         }
     }
 
-    protected boolean sendRequest(List<IAlternative> request, Platform platform)  {
+    protected boolean sendRequest(List<IAlternative> request, Platform platform) {
         try {
             String formatedRequest = formatRequest(request, platform);
-            System.out.println(formatedRequest);
+            System.out.println(header + formatedRequest);
 
             HttpGet httpGet = new HttpGet(formatedRequest);
             HttpResponse response = httpClient.execute(httpGet);
 
-            System.out.println(response.getStatusLine().getStatusCode());
+            System.out.println(header + response.getStatusLine().getStatusCode());
 
-            if(checkStatus(response.getStatusLine().getStatusCode())) {
-                System.out.println(EntityUtils.toString(response.getEntity()));
-                return EntityUtils.toString(response.getEntity()).contains("code_error");
+            if (checkStatus(response.getStatusLine().getStatusCode())) {
+                String responseString = EntityUtils.toString(response.getEntity());
+                //System.out.println(responseString);
+                return responseString.contains("code_error");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -108,13 +111,13 @@ public class Client extends Thread {
     }
 
     protected String formatRequest(List<IAlternative> request, Platform platform) {
-        return platform.getHost() + REQUESTED_METHOD + request.stream().
-                map(alternative -> alternative.format())
+        return platform.getHost() + REQUESTED_METHOD + request.stream()
+                .map(IAlternative::format)
                 .collect(Collectors.joining("&"));
     }
 
 
-    protected void initHttpClient(int timeout)  {
+    protected void initHttpClient(int timeout) {
         RequestConfig config = RequestConfig.custom()
                 .setSocketTimeout(timeout * 1000)
                 .setConnectTimeout(timeout * 1000)
@@ -139,16 +142,27 @@ public class Client extends Thread {
 
         JSONArray jsonPlatforms = jsonObject.getJSONArray("platforms");
         platforms = new HashSet<>(jsonPlatforms.length());
-        for(int i = 0; i < jsonPlatforms.length(); i++) {
+        for (int i = 0; i < jsonPlatforms.length(); i++) {
             platforms.add(new Platform(jsonPlatforms.getJSONObject(i)));
         }
 
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
-        for(int i = 0; i < jsonServices.length(); i++) {
-            services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+        for (int i = 0; i < jsonServices.length(); i++) {
+            if(jsonServices.getJSONObject(i).getString("name").equals("position")) {
+                jsonServices.getJSONObject(i).put("name", "positionStart");
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+                jsonServices.getJSONObject(i).put("name", "positionEnd");
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+            } else {
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+            }
         }
 
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
 }

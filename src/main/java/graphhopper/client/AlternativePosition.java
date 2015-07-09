@@ -10,7 +10,7 @@ public class AlternativePosition implements IAlternative {
     String lat;
     boolean start;
 
-    public AlternativePosition(String lon, String lat, boolean start) {
+    public AlternativePosition(String lat, String lon, boolean start) {
         this.lon = lon;
         this.lat = lat;
         this.start = start;

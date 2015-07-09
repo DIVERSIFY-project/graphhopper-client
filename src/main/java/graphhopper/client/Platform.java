@@ -23,8 +23,15 @@ public class Platform {
 
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
-        for(int i = 0; i < jsonServices.length(); i++) {
-            services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+        for (int i = 0; i < jsonServices.length(); i++) {
+            if(jsonServices.getJSONObject(i).getString("name").equals("position")) {
+                jsonServices.getJSONObject(i).put("name", "positionStart");
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+                jsonServices.getJSONObject(i).put("name", "positionEnd");
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+            } else {
+                services.add(new VariationPoint(jsonServices.getJSONObject(i)));
+            }
         }
     }
 

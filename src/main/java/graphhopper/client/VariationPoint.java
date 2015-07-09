@@ -14,7 +14,7 @@ import java.util.List;
  * Date: 01/07/15
  * Time: 12:05
  */
-    public class VariationPoint {
+public class VariationPoint {
     protected String name;
     protected List<IAlternative> alternatives = new ArrayList();
 
@@ -23,10 +23,12 @@ import java.util.List;
 
         JSONArray jsonAlternatives = jsonObject.getJSONArray("alternatives");
         alternatives = new ArrayList<>(jsonAlternatives.length());
-        for(int i = 0; i < jsonAlternatives.length(); i++) {
+        for (int i = 0; i < jsonAlternatives.length(); i++) {
             IAlternative alternative;
-            if(name.equals("position")) {
-                alternative = new AlternativePosition("0","0",true);
+            if (name.equals("positionStart")) {
+                alternative = new AlternativePosition(jsonAlternatives.getString(i).split(",")[0].trim(), jsonAlternatives.getString(i).split(",")[1].trim(), true);
+            } else if (name.equals("positionEnd")) {
+                alternative = new AlternativePosition(jsonAlternatives.getString(i).split(",")[0].trim(), jsonAlternatives.getString(i).split(",")[1].trim(), false);
             } else {
                 alternative = new Alternative(jsonAlternatives.getString(i), this);
             }
@@ -50,7 +52,7 @@ import java.util.List;
         return alternatives;
     }
 
-    public List<IAlternative> getShuffleAlternatives()  {
+    public List<IAlternative> getShuffleAlternatives() {
         ArrayList<IAlternative> shuffleAlternative = new ArrayList<>(alternatives);
         Collections.shuffle(shuffleAlternative);
         return shuffleAlternative;
@@ -61,18 +63,18 @@ import java.util.List;
     public boolean equals(Object obj) {
         VariationPoint variationPoint = (VariationPoint) obj;
 
-        if(!name.equals(variationPoint.name)) {
+        if (!name.equals(variationPoint.name)) {
             return false;
         }
 
         for (IAlternative alternative : alternatives) {
-            if(!(variationPoint.alternatives.contains(alternative))) {
+            if (!(variationPoint.alternatives.contains(alternative))) {
                 return false;
             }
         }
 
         for (IAlternative alternative : variationPoint.alternatives) {
-            if(!(alternatives.contains(alternative))) {
+            if (!(alternatives.contains(alternative))) {
                 return false;
             }
         }
