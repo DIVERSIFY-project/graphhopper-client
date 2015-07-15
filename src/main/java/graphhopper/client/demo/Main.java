@@ -33,6 +33,11 @@ public class Main {
         Info.info().setDemoWebSocketServer(server);
 
         for (Client client : clients) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             client.start();
         }
     }

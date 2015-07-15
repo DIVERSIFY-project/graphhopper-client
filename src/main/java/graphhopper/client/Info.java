@@ -46,10 +46,10 @@ public class Info {
         nbPlatformsPerRequest.add(platforms.size());
 
         System.out.println(request);
-        System.out.println("nbDeadPlatforms: " + deadPlatforms.size());
+        /*System.out.println("nbDeadPlatforms: " + deadPlatforms.size());
         System.out.println("nbTryPerRequest: " + (platformsTry.size() + 1));
 
-        System.out.println("nbPlatformsPerRequest: " + platforms.size());
+        System.out.println("nbPlatformsPerRequest: " + platforms.size());*/
 
     }
 
