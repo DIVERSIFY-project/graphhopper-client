@@ -2,6 +2,7 @@ package graphhopper.client;
 
 
 
+import graphhopper.client.demo.Main;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,7 +20,11 @@ public class Platform {
     String host;
 
     public Platform(JSONObject jsonObject) throws JSONException {
-        host = jsonObject.getString("host");
+        if(Main.forcedIPAddress != null) {
+            host = Main.forcedIPAddress;
+        } else {
+            host = jsonObject.getString("host");
+        }
 
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());

@@ -1,6 +1,7 @@
 package graphhopper.client;
 
 
+import graphhopper.client.demo.Main;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class Client extends Thread {
 
     String name;
+    int number = -1;
     protected List<VariationPoint> services;
     protected Set<Platform> platforms;
     protected String REQUESTED_METHOD = "restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
@@ -36,8 +38,25 @@ public class Client extends Thread {
         parse(fileName);
         initHttpClient(10);
         Info.info().addArchitecture(services, platforms);
-        name = fileName.split("/")[fileName.split("/").length - 1].split("\\.")[0];
-        header = "[" + name + "] ";
+        name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
+        if (number > 0) {
+            header = "[" + name + " (" + number + ")] ";
+        } else {
+            header = "[" + name + "] ";
+        }
+    }
+
+    public Client(String fileName, int number) throws IOException, JSONException {
+        parse(fileName);
+        initHttpClient(10);
+        Info.info().addArchitecture(services, platforms);
+        name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
+        if (number > 0) {
+            header = "[" + name + " (" + number + ")] ";
+        } else {
+            header = "[" + name + "] ";
+        }
+        this.number = number;
     }
 
     protected List<IAlternative> createRequest() {
@@ -149,7 +168,7 @@ public class Client extends Thread {
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
         for (int i = 0; i < jsonServices.length(); i++) {
-            if(jsonServices.getJSONObject(i).getString("name").equals("position")) {
+            if (jsonServices.getJSONObject(i).getString("name").equals("position")) {
                 jsonServices.getJSONObject(i).put("name", "positionStart");
                 services.add(new VariationPoint(jsonServices.getJSONObject(i)));
                 jsonServices.getJSONObject(i).put("name", "positionEnd");
