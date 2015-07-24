@@ -40,7 +40,6 @@ public class DemoWebSocketServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket ws, String string) {
 
-
     }
 
     @Override

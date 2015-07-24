@@ -38,19 +38,21 @@ public class Info {
     }
 
 
-    public synchronized void addRequest(Client client, List<IAlternative> request, List<Platform> platforms,  List<Platform> platformsTry, Platform success) {
+    public synchronized void addRequest(Client client, List<IAlternative> request, List<Platform> platforms, List<Platform> platformsTry, Platform success) {
         deadPlatforms.remove(success);
         deadPlatforms.addAll(platformsTry);
         nbDeadPlatforms.add(deadPlatforms.size());
         nbTryPerRequest.add(platformsTry.size() + 1);
         nbPlatformsPerRequest.add(platforms.size());
-
-        System.out.println(request);
         /*System.out.println("nbDeadPlatforms: " + deadPlatforms.size());
         System.out.println("nbTryPerRequest: " + (platformsTry.size() + 1));
 
         System.out.println("nbPlatformsPerRequest: " + platforms.size());*/
-
+        try {
+            demoWebSocketServer.update(allData());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     public synchronized void addArchitecture(List<VariationPoint> services, Set<Platform> platforms) {
@@ -59,14 +61,13 @@ public class Info {
 
     public JSONObject allData() throws JSONException {
         JSONObject allData = new JSONObject();
-
-        allData.put("title", new JSONObject("{text: plot}"));
+        allData.put("title", new JSONObject("{text: \"plot\"}"));
+        allData.put("legend", new JSONObject("{horizontalAlign: \"right\"," + "verticalAlign: \"bottom\"," + "fontSize: 15}"));
         JSONArray data = new JSONArray();
-        allData.put("data",data);
         data.put(formatList(nbDeadPlatforms, "nbDeadPlatforms"));
         data.put(formatList(nbPlatformsPerRequest, "nbPlatformsPerRequest"));
         data.put(formatList(nbTryPerRequest, "nbTryPerRequest"));
-
+        allData.put("data", data);
         allData.put("type", "init");
         return allData;
     }
@@ -74,8 +75,8 @@ public class Info {
     protected JSONObject formatList(List<Integer> list, String name) throws JSONException {
         JSONObject object = new JSONObject();
         object.put("type", "spline");
-        object.put("name", name);
-
+        object.put("showInLegend", "true");
+        object.put("legendText", name);
         object.put("dataPoints", list.stream()
                 .map(i -> {
                     JSONObject o = null;
@@ -87,18 +88,17 @@ public class Info {
                     return o;
                 })
                 .collect(Collectors.toList()));
-
         return object;
     }
 
     public static Info info() {
-        if(info == null) {
+        if (info == null) {
             info = new Info();
         }
         return info;
     }
 
     public void setDemoWebSocketServer(DemoWebSocketServer demoWebSocketServer) {
-        this.demoWebSocketServer =  demoWebSocketServer;
+        this.demoWebSocketServer = demoWebSocketServer;
     }
 }

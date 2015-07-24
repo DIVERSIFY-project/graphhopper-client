@@ -14,11 +14,15 @@ window.onload = function () {
 
 
         LBMSock.onmessage = function(evt) {
+            console.log(evt);
             var received = JSON.parse(evt.data);
-            if(data.type == "init") {
+            console.log(received.type);
+            if(received.type == "init") {
+                console.log("init");
                 var chart = new CanvasJS.Chart("chartContainer", received);
                 chart.render();
             } else {
+                console.log("running");
                 var newDataPoints = received.data[0].dataPoints;
                 for(i = 0; i < dataPoints.length; i++) {
                     chart.options.data[0].dataPoints.push(newDataPoints[i]);
