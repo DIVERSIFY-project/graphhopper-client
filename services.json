@@ -1,0 +1,6 @@
+
+[
+    {"name":"weighting", "alternatives":["fastest"]},
+    {"name":"vehicle", "alternatives":["car", "bike"]},
+    {"name":"position", "alternatives":[ "53.315130,-6.238099", "53.303086,-6.287210", "53.379100,-6.212726"]}
+]
