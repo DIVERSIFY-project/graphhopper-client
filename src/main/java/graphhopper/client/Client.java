@@ -15,6 +15,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,14 +110,19 @@ public class Client extends Thread {
             System.out.println(header + formatedRequest);
 
             HttpGet httpGet = new HttpGet(formatedRequest);
-            HttpResponse response = httpClient.execute(httpGet);
+            try {
+                HttpResponse response = httpClient.execute(httpGet);
 
-            System.out.println(header + response.getStatusLine().getStatusCode());
+                System.out.println(header + response.getStatusLine().getStatusCode());
 
-            if (checkStatus(response.getStatusLine().getStatusCode())) {
-                String responseString = EntityUtils.toString(response.getEntity());
-                //System.out.println(responseString);
-                return responseString.contains("code_error");
+                if (checkStatus(response.getStatusLine().getStatusCode())) {
+                    String responseString = EntityUtils.toString(response.getEntity());
+                    //System.out.println(responseString);
+                    return responseString.contains("code_error");
+                }
+            } catch (SocketTimeoutException ste) {
+                System.err.println("Platform " + platform.getHost() + " was unresponsive");
+                return false;
             }
         } catch (Exception e) {
             e.printStackTrace();

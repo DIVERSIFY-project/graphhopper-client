@@ -1,11 +1,11 @@
 {"platforms":[{
-    "host":"http://172.17.0.1:8080/",
+    "host":"http://192.168.59.103:8080/",
     "services":[
         {"name":"weighting", "alternatives":["fastest"]},
         {"name":"vehicle", "alternatives":["car", "bike"]},
         {"name":"position", "alternatives":[ "53.3747,-6.312332", "53.315130,-6.238099", "53.328434,-6.239987"]}
     ]},{
-    "host":"http://172.17.0.1:8080/",
+    "host":"http://192.168.59.103:8080/",
     "services":[
     {"name":"weighting", "alternatives":["fastest"]},
     {"name":"vehicle", "alternatives":["bike"]},
