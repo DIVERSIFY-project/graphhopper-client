@@ -3,6 +3,6 @@
 for host in $(cat $1)
     do
     echo $host
-    ssh ubuntu@$host sudo docker ps -q -a | xargs ssh ubuntu@$host sudo docker unpause &
+    ssh diversify@$host sudo docker ps -q -a | xargs ssh diversify@$host sudo docker unpause &
 done
 wait

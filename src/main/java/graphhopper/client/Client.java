@@ -40,11 +40,7 @@ public class Client extends Thread {
         initHttpClient(10);
         Info.info().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
-        if (number > 0) {
-            header = "[" + name + " (" + number + ")] ";
-        } else {
-            header = "[" + name + "] ";
-        }
+        header = "[" + name + "] ";
     }
 
     public Client(String fileName, int number) throws IOException, JSONException {
@@ -88,18 +84,17 @@ public class Client extends Thread {
             List<Platform> selectedPlatforms = selectPlatforms(request);
             Collections.shuffle(selectedPlatforms);
 
-            List<Platform> platformsTry = new ArrayList<>(selectedPlatforms.size());
+            List<Platform> platformsFailed = new ArrayList<>();
 
-            Random random = new Random();
             for (Platform platform : selectedPlatforms) {
-//                sendRequest(request, platform);
-//                if(random.nextBoolean()) {
-                if (sendRequest(request, platform)) {
-                    platformsTry.add(platform);
-                    break;
+                System.out.println(header + platform.getHost() + " : " + platformsFailed.size() + "/" + selectedPlatforms.size());
+                if (!sendRequest(request, platform)) {
+                    platformsFailed.add(platform);
+                    System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed");
                 } else {
-                    Info.info().addRequest(this, request, selectedPlatforms, platformsTry, platform);
+                    System.out.println(header + platform.getHost() + " answered");
                 }
+                Info.info().addRequest(this, request, selectedPlatforms, platformsFailed, platform);
             }
         }
     }
@@ -107,7 +102,7 @@ public class Client extends Thread {
     protected boolean sendRequest(List<IAlternative> request, Platform platform) {
         try {
             String formatedRequest = formatRequest(request, platform);
-            System.out.println(header + formatedRequest);
+            //System.out.println(header + formatedRequest);
 
             HttpGet httpGet = new HttpGet(formatedRequest);
             try {
@@ -117,10 +112,9 @@ public class Client extends Thread {
 
                 if (checkStatus(response.getStatusLine().getStatusCode())) {
                     String responseString = EntityUtils.toString(response.getEntity());
-                    //System.out.println(responseString);
-                    return responseString.contains("code_error");
+                    return !responseString.contains("code_error");
                 }
-            }catch(SocketTimeoutException ste) {
+            } catch (SocketTimeoutException ste) {
                 System.err.println(platform.getHost() + " timed out");
                 return false;
             }
