@@ -16,7 +16,7 @@ window.onload = function () {
         LBMSock.onmessage = function(evt) {
             console.log(evt);
             var received = JSON.parse(evt.data);
-            console.log(received.type);
+            console.log("received " + received.type);
             if(received.type == "init") {
                 console.log("init");
                 var chart = new CanvasJS.Chart("chartContainer", received);
@@ -52,7 +52,7 @@ window.onload = function () {
 </head>
 <body>
 <div id="chartContainer" style="width:100%; height:280px"></div>
-<button id="addDataPoint">Add DataPoint</button>
+<!--button id="addDataPoint">Add DataPoint</button-->
 </body>
 
 </html>
