@@ -6,6 +6,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -33,7 +35,8 @@ public class Client extends Thread {
     protected String REQUESTED_METHOD = "restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
     protected HttpClient httpClient;
     String header;
-
+    boolean newTick = true;
+    boolean verbose = false;
 
     public Client(String fileName) throws IOException, JSONException {
         parse(fileName);
@@ -45,7 +48,7 @@ public class Client extends Thread {
 
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
-        initHttpClient(10);
+        initHttpClient(3);
         Info.info().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {
@@ -74,11 +77,6 @@ public class Client extends Thread {
 
     public void run() {
         while (true) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             List<IAlternative> request = createRequest();
 
             List<Platform> selectedPlatforms = selectPlatforms(request);
@@ -87,16 +85,34 @@ public class Client extends Thread {
             List<Platform> platformsFailed = new ArrayList<>();
 
             for (Platform platform : selectedPlatforms) {
-                System.out.println(header + platform.getHost() + " : " + platformsFailed.size() + "/" + selectedPlatforms.size());
+                if (verbose)
+                    System.out.println(header + platform.getHost() + " : " + platformsFailed.size() + "/" + selectedPlatforms.size());
                 if (!sendRequest(request, platform)) {
                     platformsFailed.add(platform);
-                    System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed");
+                    if (verbose)
+                        System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed");
                 } else {
-                    System.out.println(header + platform.getHost() + " answered");
+                    if (verbose) System.out.println(header + platform.getHost() + " answered");
                 }
-                Info.info().addRequest(this, request, selectedPlatforms, platformsFailed, platform);
+                Info.info().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
             }
+            newTick = false;
+            Main.tickResults.get(Main.tick).set(number, platformsFailed.size());
+            startWait();
         }
+    }
+
+    synchronized void startWait() {
+        try {
+            while (!newTick) wait();
+        } catch (InterruptedException exc) {
+            System.out.println("wait() interrupted");
+        }
+    }
+
+    synchronized public void notice() {
+        newTick = true;
+        notify();
     }
 
     protected boolean sendRequest(List<IAlternative> request, Platform platform) {
@@ -108,18 +124,25 @@ public class Client extends Thread {
             try {
                 HttpResponse response = httpClient.execute(httpGet);
 
-                System.out.println(header + response.getStatusLine().getStatusCode());
+                if (verbose) System.out.println(header + response.getStatusLine().getStatusCode());
 
                 if (checkStatus(response.getStatusLine().getStatusCode())) {
                     String responseString = EntityUtils.toString(response.getEntity());
                     return !responseString.contains("code_error");
                 }
             } catch (SocketTimeoutException ste) {
-                System.err.println(platform.getHost() + " timed out");
+                if (verbose) System.err.println(platform.getHost() + " socket timed out");
+                return false;
+            } catch (HttpHostConnectException hhce) {
+                if (verbose) System.err.println(platform.getHost() + " refused");
+                return false;
+            }catch (ConnectTimeoutException cte) {
+                if (verbose) System.err.println(platform.getHost() + " connect timed out");
                 return false;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
 
         return false;

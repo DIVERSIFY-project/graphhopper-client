@@ -40,6 +40,9 @@ public class Platform {
         }
     }
 
+    public List<VariationPoint> getServices() {
+        return services;
+    }
 
     public boolean isProducer(List<IAlternative> request) {
        for(int i = 0; i < request.size(); i++) {

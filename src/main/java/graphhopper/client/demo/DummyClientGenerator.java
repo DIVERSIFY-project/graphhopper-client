@@ -33,6 +33,11 @@ public class DummyClientGenerator {
         if(!outputDir.exists()) {
             outputDir.mkdirs();
         }
+        if(!(outputDir.listFiles().length == 0)) {
+            for(File file : outputDir.listFiles()) {
+                file.delete();
+            }
+        }
 
         for(int i = 0; i < nbClient ; i++) {
             JSONObject jsonObject = generateClient();

@@ -23,7 +23,6 @@ public class DemoWebSocketServer extends WebSocketServer {
     }
 
 
-
     @Override
     public void onOpen(WebSocket ws, ClientHandshake ch) {
         try {
@@ -53,7 +52,20 @@ public class DemoWebSocketServer extends WebSocketServer {
             for (WebSocket c : con) {
                 try {
                     c.send(object.toString());
-                } catch (NotYetConnectedException ignored) {}
+                } catch (NotYetConnectedException ignored) {
+                }
+            }
+        }
+    }
+
+    public void tick() {
+        Collection<WebSocket> con = connections();
+        synchronized (con) {
+            for (WebSocket c : con) {
+                try {
+                    c.send("tick");
+                } catch (NotYetConnectedException ignored) {
+                }
             }
         }
     }
