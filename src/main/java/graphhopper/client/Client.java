@@ -32,7 +32,7 @@ public class Client extends Thread {
     int number = -1;
     protected List<VariationPoint> services;
     protected Set<Platform> platforms;
-    protected String REQUESTED_METHOD = "restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
+    protected String REQUESTED_METHOD = "route?locale=en&algoStr=astar&";//"restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
     protected HttpClient httpClient;
     String header;
     boolean newTick = true;
@@ -48,7 +48,7 @@ public class Client extends Thread {
 
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
-        initHttpClient(3);
+        initHttpClient(10);
         Info.info().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {
@@ -118,7 +118,7 @@ public class Client extends Thread {
     protected boolean sendRequest(List<IAlternative> request, Platform platform) {
         try {
             String formatedRequest = formatRequest(request, platform);
-            //System.out.println(header + formatedRequest);
+            if (verbose) System.out.println(header + formatedRequest);
 
             HttpGet httpGet = new HttpGet(formatedRequest);
             try {
