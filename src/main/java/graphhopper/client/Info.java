@@ -82,7 +82,7 @@ public class Info {
     public synchronized void tick(int tick) {
         try {
             demoWebSocketServer.update(dashboardData(tick));
-            demoWebSocketServer.tick();
+            demoWebSocketServer.tick(tick);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -90,6 +90,7 @@ public class Info {
 
     public synchronized JSONObject dashboardData(int tick) throws JSONException {
         JSONObject data = new JSONObject();
+        data.put("tick", tick);
         data.put("dead", getDeadClientsRate(tick));
         data.put("retry", getRequestFailureNumber(tick));
         data.put("service", getTotalOfferedServicesNumber(tick));

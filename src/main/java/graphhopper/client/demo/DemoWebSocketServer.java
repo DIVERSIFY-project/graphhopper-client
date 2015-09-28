@@ -25,11 +25,11 @@ public class DemoWebSocketServer extends WebSocketServer {
 
     @Override
     public void onOpen(WebSocket ws, ClientHandshake ch) {
-        try {
+        /*try {
             ws.send(String.valueOf(Info.info().allData()));
         } catch (JSONException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     @Override
@@ -58,13 +58,17 @@ public class DemoWebSocketServer extends WebSocketServer {
         }
     }
 
-    public void tick() {
+    public void tick(int tick) {
         Collection<WebSocket> con = connections();
         synchronized (con) {
             for (WebSocket c : con) {
                 try {
-                    c.send("tick");
+                    JSONObject object = new JSONObject();
+                    object.put("tick", tick);
+                    c.send(object.toString());
                 } catch (NotYetConnectedException ignored) {
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }
         }
