@@ -26,6 +26,10 @@ public class Main {
     public static void main(String[] args) throws IOException, JSONException {
 
         File dir = new File(args[0]);
+        if(!dir.isDirectory()) {
+            System.err.println(dir + ": not a folder, aborting");
+            System.exit(1);
+        }
         if (FileSystems.getDefault().toString().contains("Windows")) {
             regexSeparator = "\\\\";
         }
