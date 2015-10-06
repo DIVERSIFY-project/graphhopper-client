@@ -82,7 +82,7 @@ public class Info {
     public synchronized void tick(int tick) {
         try {
             demoWebSocketServer.update(dashboardData(tick));
-            demoWebSocketServer.tick(tick);
+            //demoWebSocketServer.tick(tick);
         } catch (JSONException e) {
             e.printStackTrace();
         }

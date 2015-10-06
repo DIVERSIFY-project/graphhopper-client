@@ -21,7 +21,8 @@ for i in $(seq 1 $2)
         #token=$(ssh -Y ubuntu@$host sudo docker run -d -p 153$i:8080 songhui/smhp-final-14)
         #ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 songhui/smhp-final-14 &
         #ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 songhui/smhp-hopper-jetty &
-        ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 barais/undertowsmartgh &
+        #ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 barais/undertowsmartgh &
+        ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 aelie/diversify &
         echo $host:153$i >> host_ip_list
         #echo $token >> token_list
     done
