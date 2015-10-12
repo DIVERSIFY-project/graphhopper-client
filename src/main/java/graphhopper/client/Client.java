@@ -48,7 +48,7 @@ public class Client extends Thread {
 
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
-        initHttpClient(1);
+        initHttpClient(10);
         Info.info().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {

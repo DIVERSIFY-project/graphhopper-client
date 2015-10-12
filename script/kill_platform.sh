@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 
+if [ -z "$1" ]
+  then
+    echo "No hosts file supplied"
+    exit 1
+fi
+
 for host in $(cat $1)
-    do
+do
     echo $host
-    ssh diversify@$host sudo docker ps -q -a | xargs ssh diversify@$host sudo docker rm -f &
+    if [[ $host ==  10.0.0.* ]]
+    then
+        echo "Cloud computer"
+        ssh -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
+    else
+        ssh diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
+    fi
 done
-wait
