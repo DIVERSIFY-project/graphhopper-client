@@ -66,7 +66,6 @@ public class DummyClientGenerator {
     protected  List<String> parseHosts(String fileName) throws IOException {
         List<String> hosts = new LinkedList<>();
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        StringBuilder sb = new StringBuilder();
         String line = reader.readLine();
         while (line != null) {
             hosts.add(line);
