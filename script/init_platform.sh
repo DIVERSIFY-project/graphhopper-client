@@ -27,7 +27,7 @@ do
     else
         for i in $(seq 1 $2)
         do
-            ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 aelie/diversify-light
+            ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 -m 2G aelie/diversify-light-3
             echo $host:153$i >> host_ip_list
         done
     fi
