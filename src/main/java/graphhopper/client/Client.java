@@ -32,11 +32,11 @@ public class Client extends Thread {
     int number = -1;
     protected List<VariationPoint> services;
     protected Set<Platform> platforms;
-    protected String REQUESTED_METHOD = "route?locale=en&algoStr=astar&";//"restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
+    protected String REQUESTED_METHOD = "route?locale=en&";//"route?locale=en&algoStr=astar&";//"restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
     protected HttpClient httpClient;
     String header;
     boolean newTick = true;
-    boolean verbose = false;
+    boolean verbose = true;
 
     public Client(String fileName) throws IOException, JSONException {
         parse(fileName);
@@ -60,11 +60,22 @@ public class Client extends Thread {
     }
 
     protected List<IAlternative> createRequest() {
-        return services.stream()
+        // dirty hack
+        List<IAlternative> result = new ArrayList<>();
+        for(VariationPoint service : services) {
+            if(!service.getAlternatives().isEmpty()) {
+                result.add(service.getShuffleAlternatives().get(0));
+            } else {
+                result.add(new Alternative(service.getName(), null));
+            }
+        }
+        return result;
+
+        /*return services.stream()
                 .map(variationPoint -> variationPoint.getShuffleAlternatives().stream()
                         .findAny()
                         .get())
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
     }
 
     protected List<Platform> selectPlatforms(List<IAlternative> request) {
@@ -154,6 +165,7 @@ public class Client extends Thread {
 
     protected String formatRequest(List<IAlternative> request, Platform platform) {
         return platform.getHost() + REQUESTED_METHOD + request.stream()
+                .filter(alt -> alt != null)
                 .map(IAlternative::format)
                 .collect(Collectors.joining("&"));
     }
@@ -200,7 +212,19 @@ public class Client extends Thread {
                 services.add(new VariationPoint(jsonServices.getJSONObject(i)));
             }
         }
+        //dirty hack
+        JSONObject pos = new JSONObject();
+        pos.put("name", "positionStart");
+        pos.put("alternatives", new JSONArray(Main.dirtyHackPositionStartAlternatives));
+        services.add(new VariationPoint(pos));
+        pos = new JSONObject();
+        pos.put("name", "positionEnd");
+        pos.put("alternatives", new JSONArray(Main.dirtyHackPositionEndAlternatives));
+        services.add(new VariationPoint(pos));
+    }
 
+    public Set<Platform> getPlatforms() {
+        return platforms;
     }
 
     @Override

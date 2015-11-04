@@ -1,7 +1,6 @@
 package graphhopper.client;
 
 
-
 import graphhopper.client.demo.Main;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,7 +19,7 @@ public class Platform {
     String host;
 
     public Platform(JSONObject jsonObject) throws JSONException {
-        if(Main.forcedIPAddress != null) {
+        if (Main.forcedIPAddress != null) {
             host = Main.forcedIPAddress;
         } else {
             host = jsonObject.getString("host");
@@ -29,7 +28,7 @@ public class Platform {
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
         for (int i = 0; i < jsonServices.length(); i++) {
-            if(jsonServices.getJSONObject(i).getString("name").equals("position")) {
+            if (jsonServices.getJSONObject(i).getString("name").equals("position")) {
                 jsonServices.getJSONObject(i).put("name", "positionStart");
                 services.add(new VariationPoint(jsonServices.getJSONObject(i)));
                 jsonServices.getJSONObject(i).put("name", "positionEnd");
@@ -38,6 +37,15 @@ public class Platform {
                 services.add(new VariationPoint(jsonServices.getJSONObject(i)));
             }
         }
+        //dirty hack
+        JSONObject pos = new JSONObject();
+        pos.put("name", "positionStart");
+        pos.put("alternatives", new JSONArray(Main.dirtyHackPositionStartAlternatives));
+        services.add(new VariationPoint(pos));
+        pos = new JSONObject();
+        pos.put("name", "positionEnd");
+        pos.put("alternatives", new JSONArray(Main.dirtyHackPositionEndAlternatives));
+        services.add(new VariationPoint(pos));
     }
 
     public List<VariationPoint> getServices() {
@@ -45,15 +53,17 @@ public class Platform {
     }
 
     public boolean isProducer(List<IAlternative> request) {
-       for(int i = 0; i < request.size(); i++) {
-           final  int position = i;
-           if(!services.get(position).getAlternatives().stream()
-                   .anyMatch(alternative -> alternative.getName().equals(request.get(position).getName()))) {
-               return false;
-           }
-       }
-       return true;
-   }
+        for (int i = 0; i < request.size(); i++) {
+            final int position = i;
+            if(request.get(position) != null) {
+                if (!services.get(position).getAlternatives().stream()
+                        .anyMatch(alternative -> alternative.getName().equals(request.get(position).getName()))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     public String getHost() {
         return host;
@@ -63,18 +73,18 @@ public class Platform {
     public boolean equals(Object obj) {
         Platform platform = (Platform) obj;
 
-        if(!host.equals(platform.host)) {
+        if (!host.equals(platform.host)) {
             return false;
         }
 
-        for(VariationPoint service : services) {
-            if(!platform.services.contains(service)) {
+        for (VariationPoint service : services) {
+            if (!platform.services.contains(service)) {
                 return false;
             }
         }
 
-        for(VariationPoint service : platform.services) {
-            if(!services.contains(service)) {
+        for (VariationPoint service : platform.services) {
+            if (!services.contains(service)) {
                 return false;
             }
         }

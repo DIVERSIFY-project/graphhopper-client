@@ -2,6 +2,7 @@ package graphhopper.client.demo;
 
 import graphhopper.client.Client;
 import graphhopper.client.Info;
+import graphhopper.client.Platform;
 import org.json.JSONException;
 
 import java.io.File;
@@ -22,6 +23,9 @@ public class Main {
     public static Map<Integer, List<Integer>> tickResults = new HashMap<>();
     public static int tick;
     public static List<Client> clients = new ArrayList<>();
+
+    public static String[] dirtyHackPositionStartAlternatives = {"53.315130,-6.238099"};
+    public static String[] dirtyHackPositionEndAlternatives = {"53.303086,-6.287210"};
 
     public static void main(String[] args) throws IOException, JSONException {
 
@@ -49,6 +53,7 @@ public class Main {
                 System.out.println(counter);
             }
         } else {
+            System.out.println("Loading clients from folder '" + dir + "'...");
             int counter = 0;
             for (File file : dir.listFiles()) {
                 if (file.getName().endsWith(".json")) {
@@ -58,6 +63,12 @@ public class Main {
                 }
             }
         }
+
+        Set<Platform> allPlatforms = new LinkedHashSet<>();
+        for(Client client : clients) {
+            allPlatforms.addAll(client.getPlatforms());
+        }
+        System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms");
 
         DemoWebSocketServer server = new DemoWebSocketServer(Integer.parseInt(args[1]));
         if (args.length > 2) {
