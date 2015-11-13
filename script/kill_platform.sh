@@ -12,8 +12,10 @@ do
     if [[ $host ==  10.0.0.* ]]
     then
         echo "Cloud computer"
-        ssh -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
+        ssh -t -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" diversify@$host sudo docker ps -q -a | xargs sudo docker unpause
+        ssh -t -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
     else
-        ssh diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
+        ssh -Y diversify@$host sudo docker ps -q -a | xargs sudo docker unpause
+        ssh -Y diversify@$host sudo docker ps -q -a | xargs sudo docker rm -f
     fi
 done

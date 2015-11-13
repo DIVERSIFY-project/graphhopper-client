@@ -6,6 +6,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.HttpClients;
@@ -36,7 +37,7 @@ public class Client extends Thread {
     protected HttpClient httpClient;
     String header;
     boolean newTick = true;
-    boolean verbose = true;
+    boolean verbose = false;
 
     public Client(String fileName) throws IOException, JSONException {
         parse(fileName);
@@ -178,6 +179,7 @@ public class Client extends Thread {
                 .build();
 
         httpClient = HttpClients.custom()
+                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
                 .setDefaultRequestConfig(config)
                 .build();
     }
@@ -221,6 +223,8 @@ public class Client extends Thread {
         pos.put("name", "positionEnd");
         pos.put("alternatives", new JSONArray(Main.dirtyHackPositionEndAlternatives));
         services.add(new VariationPoint(pos));
+
+        reader.close();
     }
 
     public Set<Platform> getPlatforms() {
