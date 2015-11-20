@@ -3,10 +3,15 @@ package graphhopper.client.demo;
 import graphhopper.client.Client;
 import graphhopper.client.Info;
 import graphhopper.client.Platform;
+import graphhopper.client.SocketManager;
 import org.json.JSONException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,7 +35,7 @@ public class Main {
     public static void main(String[] args) throws IOException, JSONException {
 
         File dir = new File(args[0]);
-        if(!dir.isDirectory()) {
+        if (!dir.isDirectory()) {
             System.err.println(dir + ": not a folder, aborting");
             System.exit(1);
         }
@@ -65,10 +70,13 @@ public class Main {
         }
 
         Set<Platform> allPlatforms = new LinkedHashSet<>();
-        for(Client client : clients) {
+        for (Client client : clients) {
             allPlatforms.addAll(client.getPlatforms());
         }
         System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms");
+        /*for(Platform platform : allPlatforms) {
+            SocketManager.getInstance().addSocket(platform);
+        }*/
 
         DemoWebSocketServer server = new DemoWebSocketServer(Integer.parseInt(args[1]));
         if (args.length > 2) {
@@ -89,11 +97,11 @@ public class Main {
         int tempCount = 0;
         int filled;
         while (true) {
-            filled = (int)tickResults.get(tick).stream().filter(output -> output >= 0).count();
-            if (filled > tempCount) {
-                for(int i = 0; i < filled - tempCount; i++) System.out.print("-");
+            filled = (int) tickResults.get(tick).stream().filter(output -> output >= 0).count();
+            /*if (filled > tempCount) {
+                for (int i = 0; i < filled - tempCount; i++) System.out.print("-");
                 tempCount = filled;
-            }
+            }*/
             if (filled == clients.size()) {
                 System.out.println();
                 System.out.println(tickResults.get(tick).stream()
@@ -102,9 +110,9 @@ public class Main {
                 System.out.println(Info.info().selectedPlatformsPerClient.get(tick).stream()
                         .map(list -> Integer.toString(list.size()))
                         .collect(Collectors.joining()));
-                System.out.println("DeadClients="+Info.info().getDeadClientsRate(tick)*100+"%");
-                System.out.println("RequestRetries="+Info.info().getRequestFailureNumber(tick));
-                System.out.println("TotalServices="+Info.info().getTotalOfferedServicesNumber(tick));
+                System.out.println("DeadClients=" + Info.info().getDeadClientsRate(tick) * 100 + "%");
+                System.out.println("RequestRetries=" + Info.info().getRequestFailureNumber(tick));
+                System.out.println("TotalServices=" + Info.info().getTotalOfferedServicesNumber(tick));
                 Info.info().tick(tick);
                 tick++;
                 System.out.println("================== TICK " + tick + " =====================");

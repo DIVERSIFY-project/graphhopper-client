@@ -28,7 +28,6 @@ done
 for line in ${HOSTS[@]}
 do
     host=$(echo $line | cut --fields=1 --delimiter=";")
-    echo $host
     #./single_kill.sh $host &
     ssh -t -t obarais@$host ./docker_kill_all.sh &
 done

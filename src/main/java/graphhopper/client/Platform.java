@@ -17,6 +17,8 @@ import java.util.List;
 public class Platform {
     List<VariationPoint> services;
     String host;
+    String address;
+    int port;
 
     public Platform(JSONObject jsonObject) throws JSONException {
         if (Main.forcedIPAddress != null) {
@@ -24,6 +26,7 @@ public class Platform {
         } else {
             host = jsonObject.getString("host");
         }
+        extractAddressAndPort(host);
 
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
@@ -48,6 +51,11 @@ public class Platform {
         services.add(new VariationPoint(pos));
     }
 
+    public void extractAddressAndPort(String host) {
+        address = host.split(":")[1].substring(2);
+        port = Integer.parseInt(host.split(":")[2].substring(0, host.split(":")[2].length() - 1));
+    }
+
     public List<VariationPoint> getServices() {
         return services;
     }
@@ -67,6 +75,14 @@ public class Platform {
 
     public String getHost() {
         return host;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     @Override

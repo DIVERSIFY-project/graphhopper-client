@@ -27,12 +27,17 @@ do
     then
         echo $host "unreachable"
     else
-        echo $host "pinged"
-        HOSTS=("${HOSTS[@]}" "$line")
-        DOCKERS=$(( DOCKERS + amount ))
+        ssh -t -t obarais@e003m01.istic.univ-rennes1.fr pgrep docker > /dev/null
+        if [ $? -eq 0 ]
+        then
+            echo $host "pinged & docker on"
+            HOSTS=("${HOSTS[@]}" "$line")
+            DOCKERS=$(( DOCKERS + amount ))
+        else
+            echo $host "docker off"
+        fi
     fi
 done
-#for line in $(cat $1)
 for line in ${HOSTS[@]}
 do
     host=$(echo $line | cut --fields=1 --delimiter=";")
@@ -42,7 +47,6 @@ do
     else
         amount=$2
     fi
-    echo $host
     for i in $(seq 1 $amount)
     do
         #ssh -t obarais@$host sudo docker run -d -p 153$i:8080 aelie/diversify-light-3
