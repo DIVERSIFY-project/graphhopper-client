@@ -6,6 +6,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,7 +18,7 @@ import java.util.stream.Collectors;
  * Time: 10:25
  */
 public class Info {
-    private static Info info;
+    private static Info instance;
 
 
     protected Set<Platform> allPlatforms;
@@ -46,12 +49,12 @@ public class Info {
         nbTryPerRequest.add(platformsTry.size() + 1);
         nbPlatformsPerRequest.add(platforms.size());
 
-        if(!allPlatformsPerTick.containsKey(tick)) {
+        if (!allPlatformsPerTick.containsKey(tick)) {
             allPlatformsPerTick.put(tick, new HashSet<>());
         }
         allPlatformsPerTick.get(tick).addAll(platforms);
 
-        if(!selectedPlatformsPerClient.containsKey(tick)) {
+        if (!selectedPlatformsPerClient.containsKey(tick)) {
             List<List<Platform>> dummy = new ArrayList<>();
             for (int i = 0; i < Main.clients.size(); i++) {
                 dummy.add(new ArrayList<>());
@@ -60,7 +63,7 @@ public class Info {
         }
         selectedPlatformsPerClient.get(tick).set(client.number, platforms);
 
-        if(!failedPlatformsPerClient.containsKey(tick)) {
+        if (!failedPlatformsPerClient.containsKey(tick)) {
             List<List<Platform>> dummy = new ArrayList<>();
             for (int i = 0; i < Main.clients.size(); i++) {
                 dummy.add(new ArrayList<>());
@@ -102,7 +105,7 @@ public class Info {
         for (int i = 0; i < Main.clients.size(); i++) {
             totalSuccess += selectedPlatformsPerClient.get(tick).get(i).size() > failedPlatformsPerClient.get(tick).get(i).size() ? 1 : 0;
         }
-        return totalSuccess / (double)Main.clients.size();
+        return totalSuccess / (double) Main.clients.size();
     }
 
     public synchronized double getDeadClientsRate(int tick) {
@@ -110,7 +113,7 @@ public class Info {
         for (int i = 0; i < Main.clients.size(); i++) {
             totalDead += selectedPlatformsPerClient.get(tick).get(i).size() == failedPlatformsPerClient.get(tick).get(i).size() ? 1 : 0;
         }
-        return totalDead / (double)Main.clients.size();
+        return totalDead / (double) Main.clients.size();
     }
 
     public synchronized int getRequestFailureNumber(int tick) {
@@ -119,11 +122,11 @@ public class Info {
                 .sum();
     }
 
-    public synchronized int getTotalOfferedServicesNumber (int tick) {
+    public synchronized int getTotalOfferedServicesNumber(int tick) {
         return allPlatformsPerTick.get(tick).stream()
                 .mapToInt(platform -> platform.getServices().stream()
                         .mapToInt(vp -> vp.getAlternatives().size())
-                        .reduce(1, (a, b) -> a *b))
+                        .reduce(1, (a, b) -> a * b))
                 .sum();
     }
 
@@ -142,6 +145,17 @@ public class Info {
         allData.put("data", data);
         allData.put("type", "init");
         return allData;
+    }
+
+    public void exportData() {
+        try {
+            PrintWriter pw = new PrintWriter(new File("results_" + System.currentTimeMillis() + ".out"));
+            pw.println(allData().toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     protected JSONObject formatList(List<Integer> list, String name) throws JSONException {
@@ -163,11 +177,11 @@ public class Info {
         return object;
     }
 
-    public static Info info() {
-        if (info == null) {
-            info = new Info();
+    public static Info getInstance() {
+        if (instance == null) {
+            instance = new Info();
         }
-        return info;
+        return instance;
     }
 
     public void setDemoWebSocketServer(DemoWebSocketServer demoWebSocketServer) {

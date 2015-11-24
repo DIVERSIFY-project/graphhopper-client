@@ -3,15 +3,10 @@ package graphhopper.client.demo;
 import graphhopper.client.Client;
 import graphhopper.client.Info;
 import graphhopper.client.Platform;
-import graphhopper.client.SocketManager;
 import org.json.JSONException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -74,9 +69,6 @@ public class Main {
             allPlatforms.addAll(client.getPlatforms());
         }
         System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms");
-        /*for(Platform platform : allPlatforms) {
-            SocketManager.getInstance().addSocket(platform);
-        }*/
 
         DemoWebSocketServer server = new DemoWebSocketServer(Integer.parseInt(args[1]));
         if (args.length > 2) {
@@ -84,7 +76,7 @@ public class Main {
         }
 
         server.start();
-        Info.info().setDemoWebSocketServer(server);
+        Info.getInstance().setDemoWebSocketServer(server);
 
         tick = 0;
         tickResults.put(tick, new ArrayList<>());
@@ -107,13 +99,13 @@ public class Main {
                 System.out.println(tickResults.get(tick).stream()
                         .map(Object::toString)
                         .collect(Collectors.joining()));
-                System.out.println(Info.info().selectedPlatformsPerClient.get(tick).stream()
+                System.out.println(Info.getInstance().selectedPlatformsPerClient.get(tick).stream()
                         .map(list -> Integer.toString(list.size()))
                         .collect(Collectors.joining()));
-                System.out.println("DeadClients=" + Info.info().getDeadClientsRate(tick) * 100 + "%");
-                System.out.println("RequestRetries=" + Info.info().getRequestFailureNumber(tick));
-                System.out.println("TotalServices=" + Info.info().getTotalOfferedServicesNumber(tick));
-                Info.info().tick(tick);
+                System.out.println("DeadClients=" + Info.getInstance().getDeadClientsRate(tick) * 100 + "%");
+                System.out.println("RequestRetries=" + Info.getInstance().getRequestFailureNumber(tick));
+                System.out.println("TotalServices=" + Info.getInstance().getTotalOfferedServicesNumber(tick));
+                Info.getInstance().tick(tick);
                 tick++;
                 System.out.println("================== TICK " + tick + " =====================");
                 tickResults.put(tick, new ArrayList<>());

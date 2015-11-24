@@ -26,7 +26,7 @@ public class DemoWebSocketServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket ws, ClientHandshake ch) {
         /*try {
-            ws.send(String.valueOf(Info.info().allData()));
+            ws.send(String.valueOf(Info.getInstance().allData()));
         } catch (JSONException e) {
             e.printStackTrace();
         }*/

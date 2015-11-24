@@ -27,7 +27,7 @@ do
     then
         echo $host "unreachable"
     else
-        ssh -t -t obarais@e003m01.istic.univ-rennes1.fr pgrep docker > /dev/null
+        ssh -t -t obarais@$host pgrep docker > /dev/null
         if [ $? -eq 0 ]
         then
             echo $host "pinged & docker on"
@@ -49,8 +49,6 @@ do
     fi
     for i in $(seq 1 $amount)
     do
-        #ssh -t obarais@$host sudo docker run -d -p 153$i:8080 aelie/diversify-light-3
-        #./single_init.sh $host 153$i &
         echo $host:153$i >> host_ip_list_wide
     done
     ssh -t -t obarais@$host ./docker_init.sh $amount &

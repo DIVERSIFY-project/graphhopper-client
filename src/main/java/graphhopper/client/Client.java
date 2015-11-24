@@ -9,7 +9,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -36,27 +35,20 @@ public class Client extends Thread {
     protected List<VariationPoint> services;
     protected Set<Platform> platforms;
     protected String REQUESTED_METHOD = "route?locale=en&";//"route?locale=en&algoStr=astar&";//"restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
-    protected HttpClient httpClient;
     HttpGet httpGet;
     HttpResponse httpResponse;
-
-    Socket socket;
 
     String header;
     boolean newTick = true;
     boolean verbose = false;
 
     Map<String, HttpClient> httpClients;
-    Map<String, Socket> sockets;
-    Map<String, PrintWriter> socketOutputs;
-    Map<String, BufferedReader> socketInputs;
 
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
-        //initSockets();
         httpClients = new HashMap<>();
-        initHttpClient(10);
-        Info.info().addArchitecture(services, platforms);
+        initHttpClient(4);
+        Info.getInstance().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {
             header = "[" + name + " (" + number + ")] ";
@@ -64,25 +56,6 @@ public class Client extends Thread {
             header = "[" + name + "] ";
         }
         this.number = number;
-    }
-
-    protected void initSockets() {
-        sockets = new HashMap<>();
-        socketOutputs = new HashMap<>();
-        socketInputs = new HashMap<>();
-        for (Platform platform : platforms) {
-            Socket socket = new Socket();
-            try {
-                //socket.setSoLinger(false, 0);
-                socket.setKeepAlive(true);
-                socket.connect(new InetSocketAddress(platform.getAddress(), platform.getPort()));
-                sockets.put(platform.getHost(), socket);
-                socketOutputs.put(platform.getHost(), new PrintWriter(socket.getOutputStream(), true));
-                socketInputs.put(platform.getHost(), new BufferedReader(new InputStreamReader(socket.getInputStream())));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     protected List<IAlternative> createRequest() {
@@ -124,10 +97,10 @@ public class Client extends Thread {
                         System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed");
                 } else {
                     if (verbose) System.out.println(header + platform.getHost() + " answered");
-                    Info.info().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
+                    Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
                     break;
                 }
-                Info.info().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
+                Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
             }
             newTick = false;
             Main.tickResults.get(Main.tick).set(number, platformsFailed.size());
@@ -152,31 +125,9 @@ public class Client extends Thread {
         try {
             String formatedRequest = formatRequest(request, platform);
             if (verbose) System.out.println(header + formatedRequest);
-            URI uri = new URI(formatedRequest);
-            String message = "";
-            String line;
-            //socket = new Socket();
-            //socket.setSoLinger(false, 0);
-            //socket.connect(new InetSocketAddress(uri.getHost(), uri.getPort()), 3000);
-            //PrintWriter outSocket = new PrintWriter(sockets.get(platform.getHost()).getOutputStream(), true);
-            //BufferedReader inSocket = new BufferedReader(new InputStreamReader(sockets.get(platform.getHost()).getInputStream()));
-            //PrintWriter outSocket = socketOutputs.get(platform.getHost());
-            //BufferedReader inSocket = socketInputs.get(platform.getHost());
-            //outSocket.print("GET " + uri.getPath() + "?" + uri.getQuery() + " HTTP/1.0\r\n" +
-            //        "Connection: close\r\n\r\n");
-            //outSocket.flush();
-            //while ((line = inSocket.readLine()) != null) {
-            //    message += line;
-            //}
-            //System.out.println(message);
-            //outSocket.close();
-            //inSocket.close();
-            //socket.close();
-            //return message.contains("200 OK") && !message.contains("code_error");
             httpGet = new HttpGet(formatedRequest);
             try {
-                //initHttpClient(3);
-                httpResponse = /*httpClient*/httpClients.get(platform.getHost()).execute(httpGet);
+                httpResponse = httpClients.get(platform.getHost()).execute(httpGet);
 
                 if (verbose) System.out.println(header + httpResponse.getStatusLine().getStatusCode());
 
@@ -184,7 +135,6 @@ public class Client extends Thread {
                     String responseString = EntityUtils.toString(httpResponse.getEntity());
                     httpGet.abort();
                     httpGet.reset();
-                    //httpClient.close();
                     return !responseString.contains("code_error");
                 }
             } catch (SocketTimeoutException ste) {
@@ -199,7 +149,6 @@ public class Client extends Thread {
             }
             httpGet.abort();
             httpGet.reset();
-            //httpClient.close();
             return false;
         } catch (Exception e) {
             e.printStackTrace();
@@ -218,57 +167,27 @@ public class Client extends Thread {
                 .collect(Collectors.joining("&"));
     }
 
-
     protected void initHttpClient(int timeout) {
-        /*httpClient = null;
-        RequestConfig config = RequestConfig.custom()
-                .setCircularRedirectsAllowed(false)
-                .setConnectionRequestTimeout(4000)
-                .setConnectTimeout(4000)
-                .setMaxRedirects(0)
-                .setRedirectsEnabled(false)
-                .setSocketTimeout(4000)
-                .build();
-
-        SocketConfig socketConfig = SocketConfig.custom()
-                .setSoKeepAlive(false)
-                .setSoLinger(0)
-                .setSoReuseAddress(true)
-                .setSoTimeout(5000)
-                .setTcpNoDelay(true)
-                .build();*/
-
-        /*RequestConfig config = RequestConfig.custom()
-                .setSocketTimeout(timeout * 1000)
-                .setConnectTimeout(timeout * 1000)
-                .build();*/
-
-        /*httpClient = HttpClients.custom()
-                //.setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(false).build())
-                .setDefaultSocketConfig(socketConfig)
-                .setDefaultRequestConfig(config)
-                .build();*/
         for(Platform platform : platforms) {
-            RequestConfig config = RequestConfig.custom()
+            RequestConfig requestConfig = RequestConfig.custom()
                     .setCircularRedirectsAllowed(false)
-                    .setConnectionRequestTimeout(4000)
-                    .setConnectTimeout(4000)
+                    .setConnectionRequestTimeout(timeout * 1000)
+                    .setConnectTimeout(timeout * 1000)
                     .setMaxRedirects(0)
                     .setRedirectsEnabled(false)
-                    .setSocketTimeout(4000)
+                    .setSocketTimeout(timeout * 1000)
                     .build();
-
             SocketConfig socketConfig = SocketConfig.custom()
                     .setSoKeepAlive(false)
                     .setSoLinger(0)
                     .setSoReuseAddress(true)
-                    .setSoTimeout(5000)
+                    .setSoTimeout(timeout * 1000)
                     .setTcpNoDelay(true)
                     .build();
+
             HttpClient tmp = HttpClients.custom()
-                    //.setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(false).build())
                     .setDefaultSocketConfig(socketConfig)
-                    .setDefaultRequestConfig(config)
+                    .setDefaultRequestConfig(requestConfig)
                     .build();
             httpClients.put(platform.getHost(), tmp);
         }
@@ -284,7 +203,6 @@ public class Client extends Thread {
         }
 
         JSONObject jsonObject = new JSONObject(sb.toString());
-
 
         JSONArray jsonPlatforms = jsonObject.getJSONArray("platforms");
         platforms = new HashSet<>(jsonPlatforms.length());
