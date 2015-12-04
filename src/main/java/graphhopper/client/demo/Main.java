@@ -2,6 +2,7 @@ package graphhopper.client.demo;
 
 import graphhopper.client.Client;
 import graphhopper.client.Info;
+import graphhopper.client.Monkey;
 import graphhopper.client.Platform;
 import org.json.JSONException;
 
@@ -23,6 +24,7 @@ public class Main {
     public static Map<Integer, List<Integer>> tickResults = new HashMap<>();
     public static int tick;
     public static List<Client> clients = new ArrayList<>();
+    public static Set<Platform> allPlatforms;
 
     public static String[] dirtyHackPositionStartAlternatives = {"53.315130,-6.238099"};
     public static String[] dirtyHackPositionEndAlternatives = {"53.303086,-6.287210"};
@@ -64,16 +66,17 @@ public class Main {
             }
         }
 
-        Set<Platform> allPlatforms = new LinkedHashSet<>();
+        allPlatforms = new LinkedHashSet<>();
         for (Client client : clients) {
             allPlatforms.addAll(client.getPlatforms());
         }
         System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms");
 
         DemoWebSocketServer server = new DemoWebSocketServer(Integer.parseInt(args[1]));
-        if (args.length > 2) {
+        /*if (args.length > 2) {
             forcedIPAddress = args[2];
-        }
+        }*/
+        Monkey monkey = new Monkey(args[2]);
 
         server.start();
         Info.getInstance().setDemoWebSocketServer(server);
@@ -81,10 +84,12 @@ public class Main {
         tick = 0;
         tickResults.put(tick, new ArrayList<>());
         System.out.println("================== TICK " + tick + " =====================");
+        monkey.monkeyRun();
         for (Client client : clients) {
             tickResults.get(tick).add(-1);
             client.start();
         }
+        //monkey.start();
 
         int tempCount = 0;
         int filled;
@@ -94,7 +99,7 @@ public class Main {
                 for (int i = 0; i < filled - tempCount; i++) System.out.print("-");
                 tempCount = filled;
             }*/
-            if (filled == clients.size()) {
+            if (filled == clients.size() && !monkey.newTick) {
                 System.out.println();
                 System.out.println(tickResults.get(tick).stream()
                         .map(Object::toString)
@@ -108,6 +113,7 @@ public class Main {
                 Info.getInstance().tick(tick);
                 tick++;
                 System.out.println("================== TICK " + tick + " =====================");
+                monkey.monkeyRun();
                 tickResults.put(tick, new ArrayList<>());
                 for (int i = 0; i < clients.size(); i++) {
                     tickResults.get(tick).add(-1);
@@ -119,6 +125,5 @@ public class Main {
             }
         }
     }
-
 
 }

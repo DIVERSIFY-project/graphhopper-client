@@ -10,6 +10,7 @@ then
     echo "No deployment size supplied, using sizes specified in hosts file" $1
 fi
 
+rm -f host_error_wide
 rm -f host_ip_list_wide
 
 DOCKERS=0
@@ -22,10 +23,11 @@ do
     else
         amount=$2
     fi
-    ping -q -c1 google.com > /dev/null
+    ping -q -c1 $host > /dev/null
     if [ $? -ne 0 ]
     then
         echo $host "unreachable"
+        echo $host "unreachable" >> host_error_wide
     else
         ssh -t -t obarais@$host pgrep docker > /dev/null
         if [ $? -eq 0 ]
@@ -35,6 +37,7 @@ do
             DOCKERS=$(( DOCKERS + amount ))
         else
             echo $host "docker off"
+            echo $host "docker off" >> host_error_wide
         fi
     fi
 done

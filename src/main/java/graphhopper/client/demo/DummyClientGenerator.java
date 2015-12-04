@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -20,6 +21,8 @@ public class DummyClientGenerator {
     int minHost;
     int maxHost;
 
+    static boolean factorBased = true;
+
     public DummyClientGenerator(String hostsFileName, String servicesFileName, int minHost, int maxHost) throws IOException, JSONException {
         this.hosts = parseHosts(hostsFileName);
         this.services = parseServices(servicesFileName);
@@ -27,6 +30,12 @@ public class DummyClientGenerator {
         this.maxHost = maxHost;
     }
 
+    public DummyClientGenerator(String hostsFileName, String servicesFileName) throws IOException, JSONException {
+        this.hosts = parseHosts(hostsFileName);
+        this.services = parseServices(servicesFileName);
+        this.minHost = Math.max(hosts.size() / 50, 1);
+        this.maxHost = Math.max(hosts.size() / 6, 2);
+    }
 
     public void generateClients(int nbClient, String outputDirName) throws JSONException, IOException {
         File outputDir = new File(outputDirName);
@@ -88,7 +97,14 @@ public class DummyClientGenerator {
     }
 
     public static void main(String[] args) throws IOException, JSONException {
-        DummyClientGenerator dcg = new DummyClientGenerator(args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
-        dcg.generateClients(Integer.parseInt(args[4]), args[5]);
+        if(!factorBased) {
+            System.out.println("FACTORBASED OFF: using command line values");
+            DummyClientGenerator dcg = new DummyClientGenerator(args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
+            dcg.generateClients(Integer.parseInt(args[4]), args[5]);
+        } else {
+            System.out.println("FACTORBASED ON: using factor calculated values");
+            DummyClientGenerator dcg = new DummyClientGenerator(args[0], args[1]);
+            dcg.generateClients(dcg.hosts.size() * 3, args[5]);
+        }
     }
 }
