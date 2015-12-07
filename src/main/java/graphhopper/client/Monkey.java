@@ -14,6 +14,7 @@ public class Monkey extends Thread {
 
     public boolean newTick = true;
     Map<String, List<String>> containersByHost;
+    Map<String, List<String>> pausedContainersByHost;
 
     public static void main(String[] args) {
         //Monkey monkey = new Monkey("script" + File.separator + "host_ip_list_wide");
@@ -24,11 +25,13 @@ public class Monkey extends Thread {
 
     public Monkey(String hostListFile) {
         containersByHost = new HashMap<>();
+        pausedContainersByHost = new HashMap<>();
         try {
             BufferedReader br = new BufferedReader(new FileReader(hostListFile));
             String line;
             while ((line = br.readLine()) != null) {
                 containersByHost.put(line.split(":")[0], new ArrayList<>());
+                pausedContainersByHost.put(line.split(":")[0], new ArrayList<>());
             }
             for (String host : containersByHost.keySet()) {
                 containersByHost.get(host).addAll(getContainers(host));
@@ -102,7 +105,7 @@ public class Monkey extends Thread {
                 e.printStackTrace();
             }
         }*/
-        unpauseAll();
+        //unpauseAll();
         /*for(String host : containersByHost.keySet()) {
             pausedContainersByHost.put(host, new ArrayList<>());
             try {
@@ -114,6 +117,20 @@ public class Monkey extends Thread {
                 e.printStackTrace();
             }
         }*/
+        //unpause
+        for(String host : pausedContainersByHost.keySet()) {
+            for(String pausedContainer : pausedContainersByHost.get(host)) {
+                try {
+                    p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker unpause " + pausedContainer);
+                    p.waitFor();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            pausedContainersByHost.get(host).clear();
+        }
         //pause
         int pausedContainersNumber = Math.max((int) (Main.allPlatforms.size() * ratio), 1);
         List<String> hosts = new ArrayList<>(containersByHost.keySet());
@@ -126,6 +143,7 @@ public class Monkey extends Thread {
                     try {
                         p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker pause " + containers.get(i));
                         p.waitFor();
+                        pausedContainersByHost.get(host).add(containers.get(i));
                         //processPrintout(p);
                         //System.out.println(containers.get(i) + "@" + host + " paused");
                     } catch (IOException e) {
@@ -195,7 +213,7 @@ public class Monkey extends Thread {
 
     public void monkeyRun() {
         if(Main.tick > 5) {
-            twelveLittleMonkeys(0.1 + 0.8 * Math.sin((double) (Main.tick - 5) / 20d));
+            twelveLittleMonkeys(0.5 * (1 + Math.sin((double) (Main.tick - 5)) / 20d));
             //twelveLittleMonkeys(0.1);
         }
 
