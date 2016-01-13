@@ -6,10 +6,10 @@ Installation :
 Pour démarrer la démo :
 - tuer tous les dockers sur les serveurs hôtes (obligatoirement Linux) : 
     sudo docker ps -a -q | xargs sudo docker rm -f
-- créer un fichier hosts contenant les adresses IP de tes machines serveurs, une par ligne
+- créer un fichier hosts contenant les adresses IP des machines serveurs, une par ligne (login@address)
 - lancer le script init_platform.sh sous graphhopper-client/script (qui lance les dockers des serveurs et crée un fichier script/host_ip_list recensant les adresses de ces dockers) avec comme paramètres :
-- le fichier hosts
-- le nombre de serveurs à lancer par machine de serveurs
+	- le fichier hosts
+	- le nombre de serveurs à lancer par machine de serveurs
     e.g. : ./init_platform.sh hosts 25
 
 - créer les faux clients en exécutant le main de la classe DummyClientGenerator de graphhopper-client avec comme paramètres :
@@ -21,11 +21,12 @@ Pour démarrer la démo :
 - le répertoire dans lequel les créer
     e.g. : java -cp <chemin_du_jar> graphhopper.client.demo.DummyClientGenerator script/host_ip_list services.json 2 8 75 dummies
 
-- attendre autour de 5-10 minutes que les serveurs soient initialisés
+- attendre quelques instants que les serveurs soient initialisés
 - lancer les clients avec le main de la classe Main de graphhopper-client avec comme paramètres :
-- le répertoire contenant les fichiers client
-- le port WebSocket
-    e.g. : java -cp <chemin_du_jar> graphhopper.client.demo.Main dummies/ 8099
+	- le répertoire contenant les fichiers client
+	- le port WebSocket
+	- pour le monkey : le fichier host_ip_list
+    e.g. : java -cp <chemin_du_jar> graphhopper.client.demo.Main -c dummies/ -p 8099 -m -l script/host_ip_list
 
 - lancer un monkey par machine de serveurs : dans smartgh-cloudml/monkey, exécuter : 
     sudo python docker_monkey_nometa.py -i tick_websocket -a <adresse_IP_de_la_machine_clients> confzoo/weibull-age.yaml
