@@ -5,7 +5,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -34,26 +33,27 @@ public class DummyClientGenerator {
         this.hosts = parseHosts(hostsFileName);
         this.services = parseServices(servicesFileName);
         this.minHost = Math.max(hosts.size() / 50, 1);
-        this.maxHost = Math.max(hosts.size() / 6, 2);
+        this.maxHost = Math.max(hosts.size() / 9, 2);
     }
 
     public void generateClients(int nbClient, String outputDirName) throws JSONException, IOException {
         File outputDir = new File(outputDirName);
-        if(!outputDir.exists()) {
+        if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
-        if(!(outputDir.listFiles().length == 0)) {
-            for(File file : outputDir.listFiles()) {
+        if (!(outputDir.listFiles().length == 0)) {
+            for (File file : outputDir.listFiles()) {
                 file.delete();
             }
         }
 
-        for(int i = 0; i < nbClient ; i++) {
+        for (int i = 0; i < nbClient; i++) {
             JSONObject jsonObject = generateClient();
             FileWriter writer = new FileWriter(new File(outputDir + "/client" + i + ".json"));
             jsonObject.write(writer);
             writer.close();
         }
+        System.out.println("Using " + hosts.size() + " platforms and " + services.length() + " services, generated " + nbClient + " clients connected to " + minHost + "-" + maxHost + " platforms each");
     }
 
     protected JSONObject generateClient() throws JSONException {
@@ -63,7 +63,7 @@ public class DummyClientGenerator {
         JSONArray platforms = new JSONArray();
         object.put("platforms", platforms);
         Random r = new Random();
-        for(int i = 0; i < minHost + r.nextInt(maxHost-minHost); i++) {
+        for (int i = 0; i < minHost + r.nextInt(maxHost - minHost); i++) {
             JSONObject platform = new JSONObject();
             platforms.put(platform);
             platform.put("services", services);
@@ -72,7 +72,7 @@ public class DummyClientGenerator {
         return object;
     }
 
-    protected  List<String> parseHosts(String fileName) throws IOException {
+    protected List<String> parseHosts(String fileName) throws IOException {
         List<String> hosts = new LinkedList<>();
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         String line = reader.readLine();
@@ -97,7 +97,7 @@ public class DummyClientGenerator {
     }
 
     public static void main(String[] args) throws IOException, JSONException {
-        if(!factorBased) {
+        if (!factorBased) {
             System.out.println("FACTORBASED OFF: using command line values");
             DummyClientGenerator dcg = new DummyClientGenerator(args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]));
             dcg.generateClients(Integer.parseInt(args[4]), args[5]);

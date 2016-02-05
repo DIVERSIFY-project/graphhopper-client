@@ -15,11 +15,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,6 +70,25 @@ public class Client extends Thread {
         return result;
     }
 
+    public List<List<IAlternative>> getAllPossibleRequests() {
+        List<List<IAlternative>> result = new ArrayList<>();
+        int amount = 1;
+        for (VariationPoint service : services) {
+            amount *= service.getAlternatives().size();
+        }
+        for (int i = 0; i < amount; i++) {
+            result.add(new ArrayList<>());
+        }
+        int mult = 1;
+        for (int i = 0; i < services.size(); i++) {
+            for (int k = 0; k < amount; k++) {
+                result.get(k).add(services.get(i).getAlternatives().get((k / mult) % services.get(i).getAlternatives().size()));
+            }
+            mult *= services.get(i).getAlternatives().size();
+        }
+        return result;
+    }
+
     protected List<Platform> selectPlatforms(List<IAlternative> request) {
         return platforms.stream()
                 .filter(platform -> platform.isProducer(request))
@@ -79,7 +97,7 @@ public class Client extends Thread {
 
     }
 
-    public void run() {
+    /*public void run() {
         while (true) {
             List<IAlternative> request = createRequest();
 
@@ -94,7 +112,7 @@ public class Client extends Thread {
                 if (!sendRequest(request, platform)) {
                     platformsFailed.add(platform);
                     if (verbose)
-                        System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed");
+                        System.out.println(header + platformsFailed.stream().map(Platform::getHost).collect(Collectors.joining(";")) + " failed on request " + formatRequest(request, platform));
                 } else {
                     if (verbose) System.out.println(header + platform.getHost() + " answered");
                     Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
@@ -105,6 +123,33 @@ public class Client extends Thread {
             newTick = false;
             Main.tickResults.get(Main.tick).set(number, platformsFailed.size());
             startWait();
+        }
+    }*/
+
+    public void run() {
+        while (true) {
+            List<List<IAlternative>> requests = getAllPossibleRequests();
+            List<List<IAlternative>> failedRequests = new ArrayList<>();
+            for(List<IAlternative> request : requests) {
+                boolean answered = false;
+                Iterator<Platform> iterPlatform = platforms.iterator();
+                while(!answered && iterPlatform.hasNext()) {
+                    Platform platform = iterPlatform.next();
+                    if (verbose)
+                        System.out.println(header + platform.getHost() + " : " + failedRequests.size() + "/" + requests.size());
+                    if (!sendRequest(request, platform)) {
+                        failedRequests.add(request);
+                        if (verbose)
+                            System.out.println(header + failedRequests.stream().map(Collection::toString).collect(Collectors.joining(";")) + " failed on request " + formatRequest(request, platform) + " on platform " + platform.getHost());
+                    } else {
+                        if (verbose) System.out.println(header + platform.getHost() + " answered");
+                        //Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
+                        //break;
+                        answered = true;
+                    }
+                    //Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
+                }
+            }
         }
     }
 
@@ -132,7 +177,12 @@ public class Client extends Thread {
                 if (verbose) System.out.println(header + httpResponse.getStatusLine().getStatusCode());
 
                 if (checkStatus(httpResponse.getStatusLine().getStatusCode())) {
-                    String responseString = EntityUtils.toString(httpResponse.getEntity());
+                    String responseString;
+                    try {
+                        responseString = EntityUtils.toString(httpResponse.getEntity());
+                    } catch (IllegalArgumentException iae) {
+                        responseString = "";
+                    }
                     httpGet.abort();
                     httpGet.reset();
                     return !responseString.contains("code_error");
@@ -167,8 +217,15 @@ public class Client extends Thread {
                 .collect(Collectors.joining("&"));
     }
 
+    public String formatRequestQuery(List<IAlternative> request) {
+        return request.stream()
+                .filter(alt -> alt != null)
+                .map(IAlternative::format)
+                .collect(Collectors.joining("&"));
+    }
+
     protected void initHttpClient(int timeout) {
-        for(Platform platform : platforms) {
+        for (Platform platform : platforms) {
             RequestConfig requestConfig = RequestConfig.custom()
                     .setCircularRedirectsAllowed(false)
                     .setConnectionRequestTimeout(timeout * 1000)

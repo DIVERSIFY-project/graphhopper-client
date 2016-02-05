@@ -31,4 +31,4 @@ do
     #./single_kill.sh $host &
     ssh -t -t obarais@$host ./docker_kill_all.sh &
 done
-wait
+#wait

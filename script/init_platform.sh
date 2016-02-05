@@ -11,6 +11,7 @@ if [ -z "$2" ]
     exit 1
 fi
 
+rm -f host_ip_list_ffbpg
 rm -f host_ip_list
 
 for host in $(cat $1)
@@ -19,7 +20,7 @@ do
     if [[ $host ==  10.0.0.* ]]
     then
         echo "Cloud computer"
-        ssh -t -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" diversify@$host sudo ./ghdemo_script $2
+        ssh -t -o "ProxyCommand ssh fox@10.0.0.1 nc %h 22" $host sudo ./ghdemo_script $2
         for i in $(seq 1 $2)
         do
             echo $host:153$i >> host_ip_list
@@ -27,8 +28,10 @@ do
     else
         for i in $(seq 1 $2)
         do
-            ssh -Y diversify@$host sudo docker run -d -p 153$i:8080 -m 2G aelie/diversify-light-3
+            ssh -Y $host sudo docker run -d -p 153$i:8080 aelie/diversify-light-5
             echo $host:153$i >> host_ip_list
+            realhost=$(echo $host | cut --fields=2 --delimiter="@")
+            echo $realhost:153$i >> host_ip_list_ffbpg
         done
     fi
 done

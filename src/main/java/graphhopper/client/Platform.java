@@ -18,6 +18,7 @@ public class Platform {
     List<VariationPoint> services;
     String host;
     String address;
+    String id;
     int port;
 
     public Platform(JSONObject jsonObject) throws JSONException {
@@ -27,6 +28,7 @@ public class Platform {
             host = jsonObject.getString("host");
         }
         extractAddressAndPort(host);
+        id = jsonObject.optString("id", null);
 
         JSONArray jsonServices = jsonObject.getJSONArray("services");
         services = new ArrayList<>(jsonServices.length());
@@ -75,6 +77,10 @@ public class Platform {
 
     public String getHost() {
         return host;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getAddress() {

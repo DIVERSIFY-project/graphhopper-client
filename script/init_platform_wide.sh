@@ -56,5 +56,5 @@ do
     done
     ssh -t -t obarais@$host ./docker_init.sh $amount &
 done
-wait
+#wait
 echo $DOCKERS "dockers on" ${#HOSTS[@]} "platforms"
