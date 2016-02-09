@@ -4,10 +4,7 @@ import graphhopper.client.*;
 import org.apache.commons.cli.*;
 import org.json.JSONException;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,7 +32,7 @@ public class Main {
     public static void main(String[] args) throws IOException, JSONException, ParseException {
         File dir;
         int wsport;
-        String hostListFile;
+        String hostListFile = null;
         Options optionsMain = new Options();
         optionsMain.addOption("h", "help", false, "display this message");
         optionsMain.addOption("c", "clients", true, "path to the folder containing the client files");
@@ -66,7 +63,6 @@ public class Main {
             System.out.println("Using internal Monkey with file " + hostListFile);
         } else {
             System.out.println("No hosts list file specified, use option -l: please use external Monkey");
-            return;
         }
 
         //File dir = new File(args[0]);
@@ -116,7 +112,7 @@ public class Main {
         }
         System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms / " + allServices.size() + " services");
         System.out.println("Client mean size=" + clients.stream().mapToInt(c -> c.getAllPossibleRequests().size()).average().getAsDouble());
-        System.out.println(allServices);
+        //System.out.println(allServices);
 
         //TODO dirty hack
         dirtyHackHostById = new HashMap<>();
@@ -126,7 +122,7 @@ public class Main {
         } else {
             System.out.println("No park size specified, use option -s");
         }
-        if (parksize > 0) {
+        if (parksize > 0 && hostListFile != null) {
             BufferedReader br = new BufferedReader(new FileReader(hostListFile));
             String line;
             int counter = 0;
@@ -168,6 +164,7 @@ public class Main {
 
         int tempCount = 0;
         int filled;
+        PrintWriter results = new PrintWriter(new File("results_" + System.currentTimeMillis()));
         while (true) {
             filled = (int) tickResults.get(tick).stream().filter(output -> output >= 0).count();
             /*if (filled > tempCount) {
@@ -183,12 +180,18 @@ public class Main {
                 System.out.println(Info.getInstance().selectedPlatformsPerClient.get(tick).stream()
                         .map(list -> Integer.toString(list.size()))
                         .collect(Collectors.joining()));
+                results.println("KillRatio=" + monkey.ratio);
                 System.out.println("DeadClients=" + Info.getInstance().getDeadClientsRate(tick) * 100);
+                results.println("DeadClientsRatio=" + Info.getInstance().getDeadClientsRate(tick));
                 System.out.println("RequestRetries=" + Info.getInstance().getRequestFailureNumber(tick));
+                results.println("RequestRetries=" + Info.getInstance().getRequestFailureNumber(tick));
                 System.out.println("TotalServices=" + Info.getInstance().getTotalOfferedServicesNumber(tick));
+                results.println("TotalServices=" + Info.getInstance().getTotalOfferedServicesNumber(tick));
+                results.flush();
                 Info.getInstance().tick(tick);
                 tick++;
                 System.out.println("================== TICK " + tick + " =====================");
+                results.println("Tick="+tick);
                 if (hostListFile != null) {
                     monkey.monkeyRun();
                 }

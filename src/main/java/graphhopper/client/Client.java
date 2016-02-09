@@ -97,7 +97,7 @@ public class Client extends Thread {
 
     }
 
-    /*public void run() {
+    public void run() {
         while (true) {
             List<IAlternative> request = createRequest();
 
@@ -124,9 +124,9 @@ public class Client extends Thread {
             Main.tickResults.get(Main.tick).set(number, platformsFailed.size());
             startWait();
         }
-    }*/
+    }
 
-    public void run() {
+    /*public void run() {
         while (true) {
             List<List<IAlternative>> requests = getAllPossibleRequests();
             List<List<IAlternative>> failedRequests = new ArrayList<>();
@@ -151,7 +151,7 @@ public class Client extends Thread {
                 }
             }
         }
-    }
+    }*/
 
     synchronized void startWait() {
         try {
