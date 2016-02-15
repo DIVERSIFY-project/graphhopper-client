@@ -145,7 +145,7 @@ public class Main {
 
         Monkey monkey = null;
         if (hostListFile != null) {
-            monkey = new Monkey(hostListFile);
+            monkey = new Monkey(hostListFile, Monkey.SINUSOIDE);
         }
 
         server.start();
@@ -180,7 +180,9 @@ public class Main {
                 System.out.println(Info.getInstance().selectedPlatformsPerClient.get(tick).stream()
                         .map(list -> Integer.toString(list.size()))
                         .collect(Collectors.joining()));
-                results.println("KillRatio=" + monkey.ratio);
+                if (hostListFile != null) {
+                    results.println("KillRatio=" + monkey.ratio);
+                }
                 System.out.println("DeadClients=" + Info.getInstance().getDeadClientsRate(tick) * 100);
                 results.println("DeadClientsRatio=" + Info.getInstance().getDeadClientsRate(tick));
                 System.out.println("RequestRetries=" + Info.getInstance().getRequestFailureNumber(tick));
