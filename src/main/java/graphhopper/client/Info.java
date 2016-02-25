@@ -24,57 +24,78 @@ public class Info {
     protected Set<Platform> allPlatforms;
     protected Set<Platform> deadPlatforms;
 
-    protected List<Integer> nbDeadPlatforms;
-    protected List<Integer> nbPlatformsPerRequest;
-    protected List<Integer> nbTryPerRequest;
+    protected List<Integer> numberDeadPlatforms;
+    protected List<Integer> numberPlatformsByRequest;
+    protected List<Integer> numberTryByRequest;
     private DemoWebSocketServer demoWebSocketServer;
 
-    public Map<Integer, List<List<Platform>>> selectedPlatformsPerClient = new HashMap<>();
-    public Map<Integer, List<List<Platform>>> failedPlatformsPerClient = new HashMap<>();
-    public Map<Integer, Set<Platform>> allPlatformsPerTick = new HashMap<>();
+    public Map<Integer, List<List<Platform>>> selectedPlatformsByClient = new HashMap<>();
+    public Map<Integer, List<List<Platform>>> failedPlatformsByClient = new HashMap<>();
+    public Map<Integer, Set<Platform>> allPlatformsByTick = new HashMap<>();
+
+    public Map<Integer, List<Integer>> failedPlatformsBySuccessfulClient = new HashMap<>();
+    public Map<Integer, List<Integer>> failedPlatformsByFailedClient = new HashMap<>();
 
     private Info() {
         allPlatforms = new HashSet<>();
         deadPlatforms = new HashSet<>();
-        nbDeadPlatforms = new LinkedList<>();
-        nbTryPerRequest = new LinkedList<>();
-        nbPlatformsPerRequest = new LinkedList<>();
+        numberDeadPlatforms = new LinkedList<>();
+        numberTryByRequest = new LinkedList<>();
+        numberPlatformsByRequest = new LinkedList<>();
     }
 
+    public synchronized void countRequests(int tick, Client client, int platformsFailedSuccess, int platformsFailedFailure) {
+        if (!failedPlatformsBySuccessfulClient.containsKey(tick)) {
+            List<Integer> dummy = new ArrayList<>();
+            for (int i = 0; i < Main.clients.size(); i++) {
+                dummy.add(-1);
+            }
+            failedPlatformsBySuccessfulClient.put(tick, new ArrayList<>(dummy));
+        }
+        failedPlatformsBySuccessfulClient.get(tick).set(client.number, platformsFailedSuccess);
+        if (!failedPlatformsByFailedClient.containsKey(tick)) {
+            List<Integer> dummy = new ArrayList<>();
+            for (int i = 0; i < Main.clients.size(); i++) {
+                dummy.add(-1);
+            }
+            failedPlatformsByFailedClient.put(tick, new ArrayList<>(dummy));
+        }
+        failedPlatformsByFailedClient.get(tick).set(client.number, platformsFailedFailure);
+    }
 
-    public synchronized void addRequest(int tick, Client client, List<IAlternative> request, List<Platform> platforms, List<Platform> platformsTry, Platform success) {
+    public synchronized void addRequest(int tick, Client client, List<IAlternative> request, List<Platform> platforms, List<Platform> platformsFailed, Platform success) {
         deadPlatforms.remove(success);
-        deadPlatforms.addAll(platformsTry);
-        nbDeadPlatforms.add(deadPlatforms.size());
-        nbTryPerRequest.add(platformsTry.size() + 1);
-        nbPlatformsPerRequest.add(platforms.size());
+        deadPlatforms.addAll(platformsFailed);
+        numberDeadPlatforms.add(deadPlatforms.size());
+        numberTryByRequest.add(platformsFailed.size() + 1);
+        numberPlatformsByRequest.add(platforms.size());
 
-        if (!allPlatformsPerTick.containsKey(tick)) {
-            allPlatformsPerTick.put(tick, new HashSet<>());
+        if (!allPlatformsByTick.containsKey(tick)) {
+            allPlatformsByTick.put(tick, new HashSet<>());
         }
-        allPlatformsPerTick.get(tick).addAll(platforms);
+        allPlatformsByTick.get(tick).addAll(platforms);
 
-        if (!selectedPlatformsPerClient.containsKey(tick)) {
+        if (!selectedPlatformsByClient.containsKey(tick)) {
             List<List<Platform>> dummy = new ArrayList<>();
             for (int i = 0; i < Main.clients.size(); i++) {
                 dummy.add(new ArrayList<>());
             }
-            selectedPlatformsPerClient.put(tick, dummy);
+            selectedPlatformsByClient.put(tick, dummy);
         }
-        selectedPlatformsPerClient.get(tick).set(client.number, platforms);
+        selectedPlatformsByClient.get(tick).set(client.number, platforms);
 
-        if (!failedPlatformsPerClient.containsKey(tick)) {
+        if (!failedPlatformsByClient.containsKey(tick)) {
             List<List<Platform>> dummy = new ArrayList<>();
             for (int i = 0; i < Main.clients.size(); i++) {
                 dummy.add(new ArrayList<>());
             }
-            failedPlatformsPerClient.put(tick, new ArrayList<>(dummy));
+            failedPlatformsByClient.put(tick, new ArrayList<>(dummy));
         }
-        failedPlatformsPerClient.get(tick).set(client.number, platformsTry);
-        /*System.out.println("nbDeadPlatforms: " + deadPlatforms.size());
-        System.out.println("nbTryPerRequest: " + (platformsTry.size() + 1));
+        failedPlatformsByClient.get(tick).set(client.number, platformsFailed);
+        /*System.out.println("numberDeadPlatforms: " + deadPlatforms.size());
+        System.out.println("numberTryByRequest: " + (platformsFailed.size() + 1));
 
-        System.out.println("nbPlatformsPerRequest: " + platforms.size());*/
+        System.out.println("numberPlatformsByRequest: " + platforms.size());*/
         /*try {
             demoWebSocketServer.update(allData());
         } catch (JSONException e) {
@@ -103,7 +124,7 @@ public class Info {
     public synchronized double getConnectionSuccessRate(int tick) {
         double totalSuccess = 0;
         for (int i = 0; i < Main.clients.size(); i++) {
-            totalSuccess += selectedPlatformsPerClient.get(tick).get(i).size() > failedPlatformsPerClient.get(tick).get(i).size() ? 1 : 0;
+            totalSuccess += selectedPlatformsByClient.get(tick).get(i).size() > failedPlatformsByClient.get(tick).get(i).size() ? 1 : 0;
         }
         return totalSuccess / (double) Main.clients.size();
     }
@@ -111,19 +132,27 @@ public class Info {
     public synchronized double getDeadClientsRate(int tick) {
         double totalDead = 0;
         for (int i = 0; i < Main.clients.size(); i++) {
-            totalDead += selectedPlatformsPerClient.get(tick).get(i).size() == failedPlatformsPerClient.get(tick).get(i).size() ? 1 : 0;
+            totalDead += selectedPlatformsByClient.get(tick).get(i).size() == failedPlatformsByClient.get(tick).get(i).size() ? 1 : 0;
         }
         return totalDead / (double) Main.clients.size();
     }
 
+    public synchronized int getDeadClients(int tick) {
+        int totalDead = 0;
+        for (int i = 0; i < Main.clients.size(); i++) {
+            totalDead += selectedPlatformsByClient.get(tick).get(i).size() == failedPlatformsByClient.get(tick).get(i).size() ? 1 : 0;
+        }
+        return totalDead;
+    }
+
     public synchronized int getRequestFailureNumber(int tick) {
-        return failedPlatformsPerClient.get(tick).stream()
+        return failedPlatformsByClient.get(tick).stream()
                 .mapToInt(List::size)
                 .sum();
     }
 
     public synchronized int getTotalOfferedServicesNumber(int tick) {
-        return allPlatformsPerTick.get(tick).stream()
+        return allPlatformsByTick.get(tick).stream()
                 .mapToInt(platform -> platform.getServices().stream()
                         .mapToInt(vp -> vp.getAlternatives().size())
                         .reduce(1, (a, b) -> a * b))
@@ -139,9 +168,9 @@ public class Info {
         allData.put("title", new JSONObject("{text: \"plot\"}"));
         allData.put("legend", new JSONObject("{horizontalAlign: \"right\"," + "verticalAlign: \"bottom\"," + "fontSize: 15}"));
         JSONArray data = new JSONArray();
-        data.put(formatList(nbDeadPlatforms, "nbDeadPlatforms"));
-        data.put(formatList(nbPlatformsPerRequest, "nbPlatformsPerRequest"));
-        data.put(formatList(nbTryPerRequest, "nbTryPerRequest"));
+        data.put(formatList(numberDeadPlatforms, "numberDeadPlatforms"));
+        data.put(formatList(numberPlatformsByRequest, "numberPlatformsByRequest"));
+        data.put(formatList(numberTryByRequest, "numberTryByRequest"));
         allData.put("data", data);
         allData.put("type", "init");
         return allData;

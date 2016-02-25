@@ -4,6 +4,7 @@ import graphhopper.client.demo.Main;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -18,10 +19,10 @@ public class Monkey extends Thread {
     public boolean newTick = true;
     Map<String, List<String>> containersByHost;
     Map<String, List<String>> pausedContainersByHost;
-    public double ratio = 0;
+    double ratio = 0;
     int type;
 
-    boolean verbose = true;
+    boolean verbose = false;
 
     public static void main(String[] args) {
         //Monkey monkey = new Monkey("script" + File.separator + "host_ip_list_wide");
@@ -59,7 +60,7 @@ public class Monkey extends Thread {
             if (ipAddress.equals("localhost") || ipAddress.equals("127.0.0.1")) {
                 p = Runtime.getRuntime().exec("docker ps -aq");
             } else {
-                p = Runtime.getRuntime().exec("ssh -t -t " + ipAddress + " sudo docker ps -a -q");
+                p = Runtime.getRuntime().exec("ssh -t -t " + ipAddress + /*" sudo*/ " docker ps -a -q");
             }
             p.waitFor();
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -85,78 +86,45 @@ public class Monkey extends Thread {
 
     public void twelveLittleMonkeys(double ratio) {
         Process p;
-        /*Map<String, List<String>> pausedContainersByHost = new HashMap<>();
-        for (String host : containersByHost.keySet()) {
-            pausedContainersByHost.put(host, new ArrayList<>());
-            try {
-                p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker ps -a |grep Paused| awk '{print $1;}'");
-                p.waitFor();
-                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String line = "";
-                while ((line = br.readLine()) != null) {
-                    pausedContainersByHost.get(host).add(line);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        System.out.println(pausedContainersByHost);
-        //unpause
-        for (String host : pausedContainersByHost.keySet()) {
-            try {
-                //p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker ps -a |grep Paused| awk '{print $1;}'|xargs sudo docker unpause");
-                //p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker ps -a -q|while read i; do sudo docker unpause $i; done");
-                p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker ps -a |grep Paused| awk '{print $1;}'|while read i; do sudo docker unpause $i; done");
-                p.waitFor();
-                //processPrintout(p);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }*/
-        //unpauseAll();
-        /*for(String host : containersByHost.keySet()) {
-            pausedContainersByHost.put(host, new ArrayList<>());
-            try {
-                p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo docker ps -a |grep Paused| awk '{print $1;}'|xargs sudo docker unpause");
-                p.waitFor();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }*/
+        int pausedContainersNumber = (int) (Main.allPlatforms.size() * ratio);
+        List<String> hosts = new ArrayList<>(containersByHost.keySet());
+        List<String> containers = new ArrayList<>(containersByHost.values().stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList()));
+        Collections.shuffle(containers);
         //unpause
         int count = 0;
         if (verbose) System.out.println("Unpaused " + pausedContainersByHost.values());
-        for (String host : pausedContainersByHost.keySet()) {
-            for (String pausedContainer : pausedContainersByHost.get(host)) {
+        long unpauseStart = System.currentTimeMillis();
+        if(ratio > 0) {
+            for (String host : pausedContainersByHost.keySet()) {
+                String pausedContainersAsString = pausedContainersByHost.get(host).stream()
+                        .collect(Collectors.joining(" "));
+                System.out.println(pausedContainersAsString);
+                count = (int) pausedContainersByHost.get(host).stream().count();
+                //for (String pausedContainer : pausedContainersByHost.get(host)) {
                 try {
                     //p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo iptables -A INPUT -p tcp -m tcp --dport " + port + " -j ACCEPT");
                     if (host.equals("localhost") || host.equals("127.0.0.1")) {
-                        p = Runtime.getRuntime().exec("docker unpause " + pausedContainer);
+                        p = Runtime.getRuntime().exec("docker unpause " + /*pausedContainer*/pausedContainersAsString);
                     } else {
-                        p = Runtime.getRuntime().exec("ssh -t -t " + host + " sudo docker unpause " + pausedContainer);
+                        p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/" docker unpause " + /*pausedContainer*/pausedContainersAsString);
                     }
                     p.waitFor();
-                    count++;
+                    //count++;
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                //}
+                pausedContainersByHost.get(host).clear();
             }
-            pausedContainersByHost.get(host).clear();
         }
         System.out.println("Unpaused " + count + " containers");
+        System.out.println("Unpause : " + (System.currentTimeMillis() - unpauseStart));
         //pause
-        int pausedContainersNumber = Math.max((int) (Main.allPlatforms.size() * ratio), 1);
-        List<String> hosts = new ArrayList<>(containersByHost.keySet());
-        List<String> containers = new ArrayList<>(containersByHost.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-        Collections.shuffle(containers);
+        long pauseStart = System.currentTimeMillis();
         for (int i = 0; i < pausedContainersNumber; i++) {
             Collections.shuffle(hosts);
             for (String host : hosts) {
@@ -166,7 +134,7 @@ public class Monkey extends Thread {
                         if (host.equals("localhost") || host.equals("127.0.0.1")) {
                             p = Runtime.getRuntime().exec("docker pause " + containers.get(i));
                         } else {
-                            p = Runtime.getRuntime().exec("ssh -t -t " + host + " sudo docker pause " + containers.get(i));
+                            p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/" docker pause " + containers.get(i));
                         }
                         p.waitFor();
                         pausedContainersByHost.get(host).add(containers.get(i));
@@ -182,6 +150,42 @@ public class Monkey extends Thread {
         }
         if (verbose) System.out.println("Paused " + pausedContainersByHost.values());
         System.out.println("Paused " + pausedContainersNumber + " containers");
+        System.out.println("Pause : " + (System.currentTimeMillis() - pauseStart));
+        /*for (String host : hosts) {
+            System.out.println("Total paused containers on " + host + ": " + getPausedContainerNumber(host));
+        }*/
+    }
+
+    public static int getPausedContainerNumber(String host) {
+        Process p;
+        String line = "";
+        try {
+            if (host.equals("localhost") || host.equals("127.0.0.1")) {
+                p = Runtime.getRuntime().exec("docker ps -a |grep Paused| awk '{print $1;}'|wc -l");
+            } else {
+                p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/ " docker ps -a |grep Paused| awk '{print $1;}'|wc -l");
+            }
+            p.waitFor();
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            line = br.readLine();
+            return Integer.parseInt(line);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException nfe) {
+            System.err.println(line);
+            return -1;
+        }
+        return -1;
+    }
+
+    public int getTotalPausedContainerNumber() {
+        int result = 0;
+        for (String host : containersByHost.keySet()) {
+            result += getPausedContainerNumber(host);
+        }
+        return result;
     }
 
     public void unpauseAll() {
@@ -215,7 +219,7 @@ public class Monkey extends Thread {
                 if (host.equals("localhost") || host.equals("127.0.0.1")) {
                     p = Runtime.getRuntime().exec("docker ps -a |grep Paused| awk '{print $1;}'|while read i; do docker unpause $i; done");
                 } else {
-                    p = Runtime.getRuntime().exec("ssh -t -t " + host + " sudo docker ps -a |grep Paused| awk '{print $1;}'|while read i; do sudo docker unpause $i; done");
+                    p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/ " docker ps -a |grep Paused| awk '{print $1;}'|while read i; do "/*+"sudo "*/+"docker unpause $i; done");
                 }
                 p.waitFor();
                 //processPrintout(p);
@@ -226,15 +230,6 @@ public class Monkey extends Thread {
             }
         }
     }
-
-    /*public static void weibullDistribution() {
-        WeibullDistribution wd = new WeibullDistribution(1.5, 20);
-        System.out.println(Arrays.toString(wd.sample(10)));
-        System.out.println(Arrays.toString(wd.sample(10)));
-        System.out.println(Arrays.toString(wd.sample(10)));
-        System.out.println(Arrays.toString(wd.sample(10)));
-        System.out.println(Arrays.toString(wd.sample(10)));
-    }*/
 
     public void run() {
         while (true) {
@@ -250,7 +245,7 @@ public class Monkey extends Thread {
                     ratio = (0.5 * (1 + Math.sin((double) (Main.tick - 5) / 10d)));
                     break;
                 case CONSTANT:
-                    ratio = 0.1;
+                    ratio = 0.3;
                     break;
                 case EXTINCTION:
                     ratio = 1. / Main.allPlatforms.size();
@@ -258,10 +253,27 @@ public class Monkey extends Thread {
                 default:
                     ratio = 1;
             }
-            System.out.println("ratio " + ratio);
             twelveLittleMonkeys(ratio);
         }
 
+        newTick = false;
+    }
+
+    public void specialMonkeyRun() {
+        if (Main.tick >= 100 && Main.tick < 200) {
+            ratio = 0.2;
+        } else if(Main.tick >= 200 && Main.tick < 300) {
+            ratio = 0.4;
+        } else if(Main.tick >= 300 && Main.tick < 400) {
+            ratio = 0.6;
+        } else if(Main.tick >= 400 && Main.tick < 500) {
+            ratio = 0.8;
+        } else if(Main.tick >= 500 && Main.tick < 600) {
+            ratio = 0.95;
+        } else {
+            ratio = 0.95;
+        }
+        twelveLittleMonkeys(ratio);
         newTick = false;
     }
 
@@ -278,4 +290,7 @@ public class Monkey extends Thread {
         notify();
     }
 
+    public double getRatio() {
+        return ratio;
+    }
 }

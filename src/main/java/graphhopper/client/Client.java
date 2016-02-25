@@ -2,13 +2,15 @@ package graphhopper.client;
 
 
 import graphhopper.client.demo.Main;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -35,18 +37,18 @@ public class Client extends Thread {
     protected Set<Platform> platforms;
     protected String REQUESTED_METHOD = "route?locale=en&";//"route?locale=en&algoStr=astar&";//"restful-graphhopper-1.0/route?locale=en&algoStr=astar&";
     HttpGet httpGet;
-    HttpResponse httpResponse;
+    CloseableHttpResponse httpResponse;
 
     String header;
     boolean newTick = true;
     boolean verbose = false;
 
-    Map<String, HttpClient> httpClients;
+    Map<String, CloseableHttpClient> httpClients;
 
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
         httpClients = new HashMap<>();
-        initHttpClient(4);
+        initHttpClient(1);
         Info.getInstance().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {
@@ -55,6 +57,7 @@ public class Client extends Thread {
             header = "[" + name + "] ";
         }
         this.number = number;
+        //System.out.println(number + " : " + getAllPossibleRequests().size() + " / " + platforms.size());
     }
 
     protected List<IAlternative> createRequest() {
@@ -99,12 +102,16 @@ public class Client extends Thread {
 
     public void run() {
         while (true) {
+            double startTick = System.currentTimeMillis();
             List<IAlternative> request = createRequest();
 
             List<Platform> selectedPlatforms = selectPlatforms(request);
             Collections.shuffle(selectedPlatforms);
 
             List<Platform> platformsFailed = new ArrayList<>();
+            boolean isConnected = false;
+            List<Platform> platformsFailedSuccess = new ArrayList<>();
+            List<Platform> platformsFailedFailure = new ArrayList<>();
 
             for (Platform platform : selectedPlatforms) {
                 if (verbose)
@@ -116,12 +123,20 @@ public class Client extends Thread {
                 } else {
                     if (verbose) System.out.println(header + platform.getHost() + " answered");
                     Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
+                    isConnected = true;
+                    platformsFailedSuccess = platformsFailed;
                     break;
                 }
                 Info.getInstance().addRequest(Main.tick, this, request, selectedPlatforms, platformsFailed, platform);
             }
+            if (!isConnected) {
+                platformsFailedFailure = platformsFailed;
+            }
+            Info.getInstance().countRequests(Main.tick, this, platformsFailedSuccess.size(), platformsFailedFailure.size());
             newTick = false;
             Main.tickResults.get(Main.tick).set(number, platformsFailed.size());
+            //System.out.println(this.number + " : " + (System.currentTimeMillis() - startTick) + " (" + platformsFailed.size() + "/" + selectedPlatforms.size() + ") " + request);
+            //System.out.print("-");
             startWait();
         }
     }
@@ -242,11 +257,20 @@ public class Client extends Thread {
                     .setTcpNoDelay(true)
                     .build();
 
-            HttpClient tmp = HttpClients.custom()
+            CloseableHttpClient tmp = HttpClients.custom()
                     .setDefaultSocketConfig(socketConfig)
                     .setDefaultRequestConfig(requestConfig)
                     .build();
             httpClients.put(platform.getHost(), tmp);
+            //httpClients.put(platform.getHost(), HttpClientBuilder.create().build());
+        }
+    }
+
+    public void disconnect() throws IOException {
+        if(httpGet != null) httpGet.abort();
+        if(httpResponse != null) httpResponse.close();
+        for (HttpClient httpClient : httpClients.values()) {
+            if(httpClient != null) ((CloseableHttpClient) httpClient).close();
         }
     }
 
