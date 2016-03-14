@@ -19,22 +19,21 @@ public class Monkey extends Thread {
     public boolean newTick = true;
     Map<String, List<String>> containersByHost;
     Map<String, List<String>> pausedContainersByHost;
+    Map<Platform, String> containerByPlatform;
+    Map<String, Platform> platformByContainer;
     double ratio = 0;
     int type;
 
     boolean verbose = false;
 
-    public static void main(String[] args) {
-        //Monkey monkey = new Monkey("script" + File.separator + "host_ip_list_wide");
-        //System.out.println(monkey.containersByHost);
-        //monkey.twelveLittleMonkeys(0.1);
-        //weibullDistribution();
-    }
+    MonkeyDisplay monkeyDisplay;
 
     public Monkey(String hostListFile, int type) {
         this.type = type;
         containersByHost = new HashMap<>();
         pausedContainersByHost = new HashMap<>();
+        containerByPlatform = new HashMap<>();
+        platformByContainer = new HashMap<>();
         try {
             BufferedReader br = new BufferedReader(new FileReader(hostListFile));
             String line;
@@ -50,7 +49,38 @@ public class Monkey extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        matchContainers();
         unpauseAll();
+        monkeyDisplay = new MonkeyDisplay(this);
+    }
+
+    public void matchContainers() {
+        for (String host : containersByHost.keySet()) {
+            Process p;
+            try {
+                if (host.equals("localhost") || host.equals("127.0.0.1")) {
+                    p = Runtime.getRuntime().exec("docker ps -a");
+                } else {
+                    p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/ " docker ps -a");
+                }
+                p.waitFor();
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = br.readLine();
+                while ((line = br.readLine()) != null) {
+                    String container = line.substring(0, 12);
+                    int port = Integer.parseInt(line.split("->")[0].substring(line.split("->")[0].length() - 4));
+                    Platform platform = Main.allPlatforms.stream().filter(pl -> pl.getAddress().equals(host.split("@")[1]) && pl.port == port).findAny().orElse(null);
+                    if(platform != null) {
+                        containerByPlatform.put(platform, container);
+                        platformByContainer.put(container, platform);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public List<String> getContainers(String ipAddress) {
@@ -88,9 +118,9 @@ public class Monkey extends Thread {
         Process p;
         int pausedContainersNumber = (int) (Main.allPlatforms.size() * ratio);
         List<String> hosts = new ArrayList<>(containersByHost.keySet());
-        List<String> containers = new ArrayList<>(containersByHost.values().stream()
+        List<String> containers = new ArrayList<>(/*containersByHost.values().stream()
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList())*/platformByContainer.keySet());
         Collections.shuffle(containers);
         //unpause
         int count = 0;
@@ -111,6 +141,7 @@ public class Monkey extends Thread {
                         p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/" docker unpause " + /*pausedContainer*/pausedContainersAsString);
                     }
                     p.waitFor();
+                    monkeyDisplay.switchAllPlatforms(true);
                     //count++;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -129,6 +160,7 @@ public class Monkey extends Thread {
             Collections.shuffle(hosts);
             for (String host : hosts) {
                 if (containersByHost.get(host).contains(containers.get(i))) {
+                    monkeyDisplay.switchPlatform(containers.get(i), false);
                     try {
                         //p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo iptables -A INPUT -p tcp -m tcp --dport " + port + " -j DROP");
                         if (host.equals("localhost") || host.equals("127.0.0.1")) {

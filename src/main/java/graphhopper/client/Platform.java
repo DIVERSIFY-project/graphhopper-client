@@ -51,6 +51,8 @@ public class Platform {
         pos.put("name", "positionEnd");
         pos.put("alternatives", new JSONArray(Main.dirtyHackPositionEndAlternatives));
         services.add(new VariationPoint(pos));
+        //http://131.254.14.205:1573//131.254.14.205/S43/1573
+        //System.out.println(host+"/"+address+"/"+id+"/"+port);
     }
 
     public void extractAddressAndPort(String host) {

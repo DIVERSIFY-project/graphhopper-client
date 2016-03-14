@@ -1,9 +1,6 @@
 package graphhopper.client.demo;
 
-import graphhopper.client.Client;
-import graphhopper.client.Info;
-import graphhopper.client.Monkey;
-import graphhopper.client.Platform;
+import graphhopper.client.*;
 import org.apache.commons.cli.*;
 import org.json.JSONException;
 
