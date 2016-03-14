@@ -37,13 +37,15 @@ public class Main {
         int wsport;
         String hostListFile = null;
         int maxTick = -1;
+        String csvName = "results_" + System.currentTimeMillis() + ".csv";
         Options optionsMain = new Options();
         optionsMain.addOption("h", "help", false, "display this message");
         optionsMain.addOption("c", "clients", true, "path to the folder containing the client files");
         optionsMain.addOption("p", "wsport", true, "web-socket port");
         optionsMain.addOption("l", "hostslist", true, "path to the hosts list file, triggers the use of the internal Monkey");
         optionsMain.addOption("s", "parksize", true, "requested size of the platforms park");
-        optionsMain.addOption("t", "maxtick", true, "Maximum tick");
+        optionsMain.addOption("t", "maxtick", true, "maximum tick");
+        optionsMain.addOption("o", "output", true, "name the CSV output file");
         CommandLineParser commandLineParser = new DefaultParser();
         CommandLine commandLine = commandLineParser.parse(optionsMain, args);
         if (commandLine.hasOption("help")) {
@@ -76,6 +78,12 @@ public class Main {
             System.out.println("Maximum tick set to " + maxTick);
         } else {
             System.out.println("No maximum tick, running until killed.");
+        }
+        if (commandLine.hasOption("output")) {
+            csvName = commandLine.getOptionValue("output");
+            System.out.println("Output CSV file name set to " + csvName);
+        } else {
+            System.out.println("Using default CSV file name " + csvName);
         }
 
         //File dir = new File(args[0]);
@@ -126,6 +134,9 @@ public class Main {
                     .collect(Collectors.toList()));
         }
         System.out.println(clients.size() + " clients / " + allPlatforms.size() + " platforms / " + allServices.size() + " services");
+        Info.getInstance().setInitialClientsNumber(clients.size());
+        Info.getInstance().setInitialPlatformsNumber(allPlatforms.size());
+        Info.getInstance().setInitialServicesNumber(allServices.size());
         System.out.println("Client mean size=" + clients.stream().mapToInt(c -> c.getAllPossibleRequests().size()).average().getAsDouble());
         //System.out.println(allServices);
 
@@ -177,6 +188,7 @@ public class Main {
         Monkey monkey = null;
         if (hostListFile != null) {
             monkey = new Monkey(hostListFile, Monkey.CONSTANT);
+            Info.getInstance().setMonkeyOn(true);
         }
 
         server.start();
@@ -201,7 +213,7 @@ public class Main {
         int tempCount = 0;
         int filled;
         PrintWriter results = new PrintWriter(new File("results_" + System.currentTimeMillis()));
-        PrintWriter resultsCSV = new PrintWriter(new File("results_" + System.currentTimeMillis() + ".csv"));
+        PrintWriter resultsCSV = new PrintWriter(new File(csvName));
         resultsCSV.println("tick,KillRatio,DeadClientsRatio,DeadClients,RequestRetries,RequestRetriesSuccess,RequestRetriesSuccessNorm,RequestRetriesFailure,RequestRetriesFailureNorm,TotalServices");
         long tickStart = System.currentTimeMillis();
         while (maxTick > 0 ? tick <= maxTick : true) {

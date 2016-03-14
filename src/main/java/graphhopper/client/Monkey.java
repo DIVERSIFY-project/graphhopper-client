@@ -151,6 +151,7 @@ public class Monkey extends Thread {
         if (verbose) System.out.println("Paused " + pausedContainersByHost.values());
         System.out.println("Paused " + pausedContainersNumber + " containers");
         System.out.println("Pause : " + (System.currentTimeMillis() - pauseStart));
+        Info.getInstance().setMonkeyPausedPlatforms(Main.tick, pausedContainersNumber);
         /*for (String host : hosts) {
             System.out.println("Total paused containers on " + host + ": " + getPausedContainerNumber(host));
         }*/
@@ -271,7 +272,7 @@ public class Monkey extends Thread {
         } else if(Main.tick >= 500 && Main.tick < 600) {
             ratio = 0.95;
         } else {
-            ratio = 0.95;
+            ratio = 0.05;
         }
         twelveLittleMonkeys(ratio);
         newTick = false;

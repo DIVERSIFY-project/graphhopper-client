@@ -36,12 +36,19 @@ public class Info {
     public Map<Integer, List<Integer>> failedPlatformsBySuccessfulClient = new HashMap<>();
     public Map<Integer, List<Integer>> failedPlatformsByFailedClient = new HashMap<>();
 
+    public boolean monkeyOn = false;
+    public List<Integer> monkeyPausedPlatforms;
+    public int initialClientsNumber = 0;
+    public int initialPlatformsNumber = 0;
+    public int initialServicesNumber = 0;
+
     private Info() {
         allPlatforms = new HashSet<>();
         deadPlatforms = new HashSet<>();
         numberDeadPlatforms = new LinkedList<>();
         numberTryByRequest = new LinkedList<>();
         numberPlatformsByRequest = new LinkedList<>();
+        monkeyPausedPlatforms = new LinkedList<>();
     }
 
     public synchronized void countRequests(int tick, Client client, int platformsFailedSuccess, int platformsFailedFailure) {
@@ -118,6 +125,11 @@ public class Info {
         data.put("dead", getDeadClientsRate(tick));
         data.put("retry", getRequestFailureNumber(tick));
         data.put("service", getTotalOfferedServicesNumber(tick));
+        data.put("monkey", monkeyOn);
+        data.put("pausedplatforms", monkeyPausedPlatforms.get(tick));
+        data.put("initialclients", initialClientsNumber);
+        data.put("initialplatforms", initialPlatformsNumber);
+        data.put("initialservices", initialServicesNumber);
         return data;
     }
 
@@ -204,6 +216,26 @@ public class Info {
                 })
                 .collect(Collectors.toList()));
         return object;
+    }
+
+    public void setMonkeyOn(boolean monkeyOn) {
+        this.monkeyOn = monkeyOn;
+    }
+
+    public void setInitialClientsNumber(int initialClientsNumber) {
+        this.initialClientsNumber = initialClientsNumber;
+    }
+
+    public void setInitialPlatformsNumber(int initialPlatformsNumber) {
+        this.initialPlatformsNumber = initialPlatformsNumber;
+    }
+
+    public void setInitialServicesNumber(int initialServicesNumber) {
+        this.initialServicesNumber = initialServicesNumber;
+    }
+
+    public void setMonkeyPausedPlatforms(int tick, int monkeyPausedPlatforms) {
+        this.monkeyPausedPlatforms.add(tick, monkeyPausedPlatforms);
     }
 
     public static Info getInstance() {
