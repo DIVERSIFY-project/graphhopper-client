@@ -48,7 +48,7 @@ public class Client extends Thread {
     public Client(String fileName, int number) throws IOException, JSONException {
         parse(fileName);
         httpClients = new HashMap<>();
-        initHttpClient(1);
+        initHttpClient(0.2f);
         Info.getInstance().addArchitecture(services, platforms);
         name = fileName.split(Main.regexSeparator)[fileName.split(Main.regexSeparator).length - 1].split("\\.")[0];
         if (number > 0) {
@@ -239,21 +239,21 @@ public class Client extends Thread {
                 .collect(Collectors.joining("&"));
     }
 
-    protected void initHttpClient(int timeout) {
+    protected void initHttpClient(float timeout) {
         for (Platform platform : platforms) {
             RequestConfig requestConfig = RequestConfig.custom()
                     .setCircularRedirectsAllowed(false)
-                    .setConnectionRequestTimeout(timeout * 1000)
-                    .setConnectTimeout(timeout * 1000)
+                    .setConnectionRequestTimeout((int)(timeout * 1000))
+                    .setConnectTimeout((int)(timeout * 1000))
                     .setMaxRedirects(0)
                     .setRedirectsEnabled(false)
-                    .setSocketTimeout(timeout * 1000)
+                    .setSocketTimeout((int)(timeout * 1000))
                     .build();
             SocketConfig socketConfig = SocketConfig.custom()
                     .setSoKeepAlive(false)
                     .setSoLinger(0)
                     .setSoReuseAddress(true)
-                    .setSoTimeout(timeout * 1000)
+                    .setSoTimeout((int)(timeout * 1000))
                     .setTcpNoDelay(true)
                     .build();
 

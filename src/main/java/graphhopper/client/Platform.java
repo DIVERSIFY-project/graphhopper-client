@@ -60,25 +60,6 @@ public class Platform {
         port = Integer.parseInt(host.split(":")[2].substring(0, host.split(":")[2].length() - 1));
     }
 
-    public List<List<IAlternative>> getAllPossibleRequests() {
-        List<List<IAlternative>> result = new ArrayList<>();
-        int amount = 1;
-        for (VariationPoint service : services) {
-            amount *= service.getAlternatives().size();
-        }
-        for (int i = 0; i < amount; i++) {
-            result.add(new ArrayList<>());
-        }
-        int mult = 1;
-        for (int i = 0; i < services.size(); i++) {
-            for (int k = 0; k < amount; k++) {
-                result.get(k).add(services.get(i).getAlternatives().get((k / mult) % services.get(i).getAlternatives().size()));
-            }
-            mult *= services.get(i).getAlternatives().size();
-        }
-        return result;
-    }
-
     public List<VariationPoint> getServices() {
         return services;
     }

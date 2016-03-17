@@ -6,9 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,9 +36,12 @@ public class Info {
 
     public boolean monkeyOn = false;
     public List<Integer> monkeyPausedPlatforms;
+    public List<Double> monkeyRatio;
     public int initialClientsNumber = 0;
     public int initialPlatformsNumber = 0;
     public int initialServicesNumber = 0;
+    public Map<String, Map<Integer, Double>> addedCSVData1;
+    public Map<String, Map<Integer, Double>> addedCSVData2;
 
     private Info() {
         allPlatforms = new HashSet<>();
@@ -49,6 +50,7 @@ public class Info {
         numberTryByRequest = new LinkedList<>();
         numberPlatformsByRequest = new LinkedList<>();
         monkeyPausedPlatforms = new LinkedList<>();
+        monkeyRatio = new LinkedList<>();
     }
 
     public synchronized void countRequests(int tick, Client client, int platformsFailedSuccess, int platformsFailedFailure) {
@@ -121,15 +123,59 @@ public class Info {
 
     public synchronized JSONObject dashboardData(int tick) throws JSONException {
         JSONObject data = new JSONObject();
+        Map<String, Object> valueTimeMap;
         data.put("tick", tick);
-        data.put("dead", getDeadClientsRate(tick));
-        data.put("retry", getRequestFailureNumber(tick));
-        data.put("service", getTotalOfferedServicesNumber(tick));
+        valueTimeMap = new HashMap<>();
+        valueTimeMap.put("time_stamp", tick);
+        valueTimeMap.put("value", getDeadClientsRate(tick) * 100);
+        data.put("dead", valueTimeMap);
+        valueTimeMap = new HashMap<>();
+        valueTimeMap.put("time_stamp", tick);
+        valueTimeMap.put("value", getRequestFailureNumber(tick));
+        data.put("retry", valueTimeMap);
+        valueTimeMap = new HashMap<>();
+        valueTimeMap.put("time_stamp", tick);
+        valueTimeMap.put("value", getTotalOfferedServicesNumber(tick));
+        data.put("service", valueTimeMap);
+        data.put("ratio", monkeyRatio.get(tick));
         data.put("monkey", monkeyOn);
         data.put("pausedplatforms", monkeyPausedPlatforms.get(tick));
         data.put("initialclients", initialClientsNumber);
         data.put("initialplatforms", initialPlatformsNumber);
         data.put("initialservices", initialServicesNumber);
+        if(addedCSVData1 != null) {
+            if(addedCSVData1.get("DeadClientsRatio").get(tick) != null) {
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData1.get("DeadClientsRatio").get(tick) * 100);
+                data.put("csvdead1", valueTimeMap);
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData1.get("RequestRetries").get(tick));
+                data.put("csvretry1", valueTimeMap);
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData1.get("TotalServices").get(tick));
+                data.put("csvservice1", valueTimeMap);
+            }
+        }
+        if(addedCSVData2 != null) {
+            if(addedCSVData2.get("DeadClientsRatio").get(tick) != null) {
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData2.get("DeadClientsRatio").get(tick) * 100);
+                data.put("csvdead2", valueTimeMap);
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData2.get("RequestRetries").get(tick));
+                data.put("csvretry2", valueTimeMap);
+                valueTimeMap = new HashMap<>();
+                valueTimeMap.put("time_stamp", tick);
+                valueTimeMap.put("value", addedCSVData2.get("TotalServices").get(tick));
+                data.put("csvservice2", valueTimeMap);
+            }
+        }
+        System.out.println(data);
         return data;
     }
 
@@ -192,9 +238,7 @@ public class Info {
         try {
             PrintWriter pw = new PrintWriter(new File("results_" + System.currentTimeMillis() + ".out"));
             pw.println(allData().toString());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
+        } catch (FileNotFoundException | JSONException e) {
             e.printStackTrace();
         }
     }
@@ -236,6 +280,38 @@ public class Info {
 
     public void setMonkeyPausedPlatforms(int tick, int monkeyPausedPlatforms) {
         this.monkeyPausedPlatforms.add(tick, monkeyPausedPlatforms);
+    }
+
+    public void setMonkeyRatio(int tick, double monkeyRatio) {
+        this.monkeyRatio.add(tick, monkeyRatio);
+    }
+
+    public void addCSVData(String addedCSVDataFile, int position) {
+        Map<String, Map<Integer, Double>> addedCSVData = new LinkedHashMap<>();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(addedCSVDataFile));
+            String line = br.readLine();
+            List<String> dataNames = Arrays.asList(line.split(","));
+            for(int i = 1; i < dataNames.size(); i++) {
+                addedCSVData.put(dataNames.get(i), new HashMap<>());
+            }
+            while((line = br.readLine()) != null) {
+                int tick = Integer.parseInt(line.split(",")[0]);
+                for(int i = 1; i < dataNames.size(); i++) {
+                    addedCSVData.get(dataNames.get(i)).put(tick, Double.parseDouble(line.split(",")[i]));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(position == 0) {
+            addedCSVData1 = addedCSVData;
+        } else if(position == 1) {
+            addedCSVData2 = addedCSVData;
+        } else {
+            System.err.println("Bad position for external CSV data: " + position);
+            System.exit(1);
+        }
     }
 
     public static Info getInstance() {

@@ -130,7 +130,6 @@ public class Monkey extends Thread {
             for (String host : pausedContainersByHost.keySet()) {
                 String pausedContainersAsString = pausedContainersByHost.get(host).stream()
                         .collect(Collectors.joining(" "));
-                System.out.println(pausedContainersAsString);
                 count = (int) pausedContainersByHost.get(host).stream().count();
                 //for (String pausedContainer : pausedContainersByHost.get(host)) {
                 try {
@@ -293,19 +292,8 @@ public class Monkey extends Thread {
     }
 
     public void specialMonkeyRun() {
-        if (Main.tick >= 100 && Main.tick < 200) {
-            ratio = 0.2;
-        } else if(Main.tick >= 200 && Main.tick < 300) {
-            ratio = 0.4;
-        } else if(Main.tick >= 300 && Main.tick < 400) {
-            ratio = 0.6;
-        } else if(Main.tick >= 400 && Main.tick < 500) {
-            ratio = 0.8;
-        } else if(Main.tick >= 500 && Main.tick < 600) {
-            ratio = 0.95;
-        } else {
-            ratio = 0.05;
-        }
+        ratio = ((double)(Main.tick / 50)) * 10 / 100;
+        Info.getInstance().setMonkeyRatio(Main.tick, ratio);
         twelveLittleMonkeys(ratio);
         newTick = false;
     }

@@ -1,6 +1,9 @@
 package graphhopper.client.demo;
 
-import graphhopper.client.*;
+import graphhopper.client.Client;
+import graphhopper.client.Info;
+import graphhopper.client.Monkey;
+import graphhopper.client.Platform;
 import org.apache.commons.cli.*;
 import org.json.JSONException;
 
@@ -30,11 +33,14 @@ public class Main {
     public static Map<String, String> dirtyHackHostById;
 
     public static void main(String[] args) throws IOException, JSONException, ParseException {
+        long simulationStart = System.currentTimeMillis();
         File dir;
         int wsport;
         String hostListFile = null;
         int maxTick = -1;
         String csvName = "results_" + System.currentTimeMillis() + ".csv";
+        String externalCSV1 = null;
+        String externalCSV2 = null;
         Options optionsMain = new Options();
         optionsMain.addOption("h", "help", false, "display this message");
         optionsMain.addOption("c", "clients", true, "path to the folder containing the client files");
@@ -42,7 +48,9 @@ public class Main {
         optionsMain.addOption("l", "hostslist", true, "path to the hosts list file, triggers the use of the internal Monkey");
         optionsMain.addOption("s", "parksize", true, "requested size of the platforms park");
         optionsMain.addOption("t", "maxtick", true, "maximum tick");
-        optionsMain.addOption("o", "output", true, "name the CSV output file");
+        optionsMain.addOption("o", "output", true, "name of the CSV output file");
+        optionsMain.addOption("x1", "crossdisplay1", true, "name of the 1st external CSV file to be displayed in Freeboard");
+        optionsMain.addOption("x2", "crossdisplay2", true, "name of the 2nd external CSV file to be displayed in Freeboard");
         CommandLineParser commandLineParser = new DefaultParser();
         CommandLine commandLine = commandLineParser.parse(optionsMain, args);
         if (commandLine.hasOption("help")) {
@@ -81,6 +89,18 @@ public class Main {
             System.out.println("Output CSV file name set to " + csvName);
         } else {
             System.out.println("Using default CSV file name " + csvName);
+        }
+        if (commandLine.hasOption("crossdisplay1")) {
+            externalCSV1 = commandLine.getOptionValue("crossdisplay1");
+            System.out.println("1st external CSV file " + externalCSV1 + " used for Freeboard display");
+        } else {
+            System.out.println("No 1st external CSV file added for Freeboard display");
+        }
+        if (commandLine.hasOption("crossdisplay2")) {
+            externalCSV2 = commandLine.getOptionValue("crossdisplay2");
+            System.out.println("2nd external CSV file " + externalCSV2 + " used for Freeboard display");
+        } else {
+            System.out.println("No 2nd external CSV file added for Freeboard display");
         }
 
         //File dir = new File(args[0]);
@@ -134,8 +154,20 @@ public class Main {
         Info.getInstance().setInitialClientsNumber(clients.size());
         Info.getInstance().setInitialPlatformsNumber(allPlatforms.size());
         Info.getInstance().setInitialServicesNumber(allServices.size());
+        if (externalCSV1 != null) {
+            Info.getInstance().addCSVData(externalCSV1, 0);
+        }
+        if (externalCSV2 != null) {
+            Info.getInstance().addCSVData(externalCSV2, 1);
+        }
         System.out.println("Client mean size=" + clients.stream().mapToInt(c -> c.getAllPossibleRequests().size()).average().getAsDouble());
         //System.out.println(allServices);
+
+        int errors = testContainers(allPlatforms);
+        if (errors != 0) {
+            System.err.println("CONTAINER ERROR: " + errors + " containers are 'Exited'");
+            System.exit(1);
+        }
 
         //TODO dirty hack
         dirtyHackHostById = new HashMap<>();
@@ -164,13 +196,11 @@ public class Main {
             }
         }
 
-        Runtime.getRuntime().addShutdownHook(new Thread()
-        {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
-            public void run()
-            {
+            public void run() {
                 System.err.println("Erroneous exit: cleaning all connections");
-                for(Client client : clients) {
+                for (Client client : clients) {
                     try {
                         client.disconnect();
                     } catch (IOException e) {
@@ -201,7 +231,7 @@ public class Main {
             tickResults.get(tick).add(-1);
             client.start();
             try {
-                Thread.sleep(10);
+                Thread.sleep(0);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -211,7 +241,16 @@ public class Main {
         int filled;
         PrintWriter results = new PrintWriter(new File("results_" + System.currentTimeMillis()));
         PrintWriter resultsCSV = new PrintWriter(new File(csvName));
-        resultsCSV.println("tick,KillRatio,DeadClientsRatio,DeadClients,RequestRetries,RequestRetriesSuccess,RequestRetriesSuccessNorm,RequestRetriesFailure,RequestRetriesFailureNorm,TotalServices");
+        resultsCSV.println("Tick" +
+                ",KillRatio" +
+                ",DeadClientsRatio" +
+                ",DeadClients" +
+                ",RequestRetries" +
+                ",RequestRetriesSuccess" +
+                ",RequestRetriesSuccessNorm" +
+                ",RequestRetriesFailure" +
+                ",RequestRetriesFailureNorm" +
+                ",TotalServices");
         long tickStart = System.currentTimeMillis();
         while (maxTick > 0 ? tick <= maxTick : true) {
             filled = (int) tickResults.get(tick).stream().filter(output -> output >= 0).count();
@@ -229,7 +268,6 @@ public class Main {
                         .map(list -> Integer.toString(list.size()))
                         .collect(Collectors.joining()));*/
                 double killRatio = (hostListFile != null ? monkey.getRatio() : -1);
-                //int totalPausedContainers = monkey.getTotalPausedContainerNumber();
                 double dcRatio = Info.getInstance().getDeadClientsRate(tick);
                 int dc = Info.getInstance().getDeadClients(tick);
                 int rr = Info.getInstance().getRequestFailureNumber(tick);
@@ -252,7 +290,6 @@ public class Main {
                 }
                 int totalServices = Info.getInstance().getTotalOfferedServicesNumber(tick);
                 System.out.println("KillRatio=" + killRatio);
-                //System.out.println("TotalPausedContainers=" + totalPausedContainers);
                 System.out.println("DeadClientsRatio=" + dcRatio);
                 System.out.println("DeadClients=" + dc);
                 System.out.println("RequestRetries=" + rr);
@@ -262,7 +299,6 @@ public class Main {
                 System.out.println("RequestRetriesFailureNorm=" + rrFailureNorm);
                 System.out.println("TotalServices=" + totalServices);
                 results.println("KillRatio=" + killRatio);
-                //results.println("TotalPausedContainers=" + totalPausedContainers);
                 results.println("DeadClientsRatio=" + dcRatio);
                 results.println("DeadClients=" + dc);
                 results.println("RequestRetries=" + rr);
@@ -272,7 +308,16 @@ public class Main {
                 results.println("RequestRetriesFailureNorm=" + rrFailureNorm);
                 results.println("TotalServices=" + totalServices);
                 results.flush();
-                resultsCSV.println(tick+","+killRatio+","+dcRatio+","+dc+","+rr+","+rrSuccess+","+rrSuccessNorm+","+rrFailure+","+rrFailureNorm+","+totalServices);
+                resultsCSV.println(tick
+                        + "," + killRatio
+                        + "," + dcRatio
+                        + "," + dc
+                        + "," + rr
+                        + "," + rrSuccess
+                        + "," + rrSuccessNorm
+                        + "," + rrFailure
+                        + "," + rrFailureNorm
+                        + "," + totalServices);
                 resultsCSV.flush();
                 Info.getInstance().tick(tick);
                 tick++;
@@ -287,13 +332,10 @@ public class Main {
                 for (int i = 0; i < clients.size(); i++) {
                     tickResults.get(tick).add(-1);
                 }
-                /*for (Client client : clients) {
-                    client.notice();
-                }*/
                 for (Client client : clients) {
                     client.notice();
                     try {
-                        Thread.sleep(10);
+                        Thread.sleep(0);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -303,7 +345,36 @@ public class Main {
         }
         results.close();
         resultsCSV.close();
-        System.out.println("Simulation finished, exiting");
+        System.out.println("Simulation finished in " + (System.currentTimeMillis() - simulationStart) / 1000 + "s, exiting");
         System.exit(0);
+    }
+
+    public static int testContainers(Set<Platform> platforms) {
+        System.out.println("Checking containers state...");
+        int exitedContainers = 0;
+        for (Platform platform : platforms) {
+            String host = platform.getHost();
+            Process p;
+            try {
+                if (host.equals("localhost") || host.equals("127.0.0.1")) {
+                    p = Runtime.getRuntime().exec("docker ps -a");
+                } else {
+                    p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/ " docker ps -a");
+                }
+                p.waitFor();
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = br.readLine();
+                while ((line = br.readLine()) != null) {
+                    if (line.contains("Exited")) {
+                        exitedContainers++;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return exitedContainers;
     }
 }
