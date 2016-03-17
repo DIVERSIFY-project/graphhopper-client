@@ -32,6 +32,9 @@ public class Main {
 
     public static Map<String, String> dirtyHackHostById;
 
+    public static String externalCSV1 = null;
+    public static String externalCSV2 = null;
+
     public static void main(String[] args) throws IOException, JSONException, ParseException {
         long simulationStart = System.currentTimeMillis();
         File dir;
@@ -39,8 +42,6 @@ public class Main {
         String hostListFile = null;
         int maxTick = -1;
         String csvName = "results_" + System.currentTimeMillis() + ".csv";
-        String externalCSV1 = null;
-        String externalCSV2 = null;
         Options optionsMain = new Options();
         optionsMain.addOption("h", "help", false, "display this message");
         optionsMain.addOption("c", "clients", true, "path to the folder containing the client files");
@@ -163,12 +164,6 @@ public class Main {
         System.out.println("Client mean size=" + clients.stream().mapToInt(c -> c.getAllPossibleRequests().size()).average().getAsDouble());
         //System.out.println(allServices);
 
-        int errors = testContainers(allPlatforms);
-        if (errors != 0) {
-            System.err.println("CONTAINER ERROR: " + errors + " containers are 'Exited'");
-            System.exit(1);
-        }
-
         //TODO dirty hack
         dirtyHackHostById = new HashMap<>();
         int parksize = -1;
@@ -199,7 +194,7 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.err.println("Erroneous exit: cleaning all connections");
+                System.err.println("Exiting: cleaning all connections");
                 for (Client client : clients) {
                     try {
                         client.disconnect();
@@ -345,36 +340,6 @@ public class Main {
         }
         results.close();
         resultsCSV.close();
-        System.out.println("Simulation finished in " + (System.currentTimeMillis() - simulationStart) / 1000 + "s, exiting");
-        System.exit(0);
-    }
-
-    public static int testContainers(Set<Platform> platforms) {
-        System.out.println("Checking containers state...");
-        int exitedContainers = 0;
-        for (Platform platform : platforms) {
-            String host = platform.getHost();
-            Process p;
-            try {
-                if (host.equals("localhost") || host.equals("127.0.0.1")) {
-                    p = Runtime.getRuntime().exec("docker ps -a");
-                } else {
-                    p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/ " docker ps -a");
-                }
-                p.waitFor();
-                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String line = br.readLine();
-                while ((line = br.readLine()) != null) {
-                    if (line.contains("Exited")) {
-                        exitedContainers++;
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        return exitedContainers;
+        System.out.println("Simulation finished in " + (System.currentTimeMillis() - simulationStart) / 1000 + "s");
     }
 }

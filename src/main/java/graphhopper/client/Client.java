@@ -20,6 +20,8 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -211,6 +213,12 @@ public class Client extends Thread {
             } catch (ConnectTimeoutException cte) {
                 if (verbose) System.err.println(platform.getHost() + " connect timed out");
                 return false;
+            } catch (SocketException se) {
+                if (verbose) System.err.println(platform.getHost() + " socket unreachable");
+            } catch (IllegalStateException ise) {
+                if (verbose) System.err.println(platform.getHost() + " connection pool shut down");
+            } catch (InterruptedIOException iioe) {
+                if (verbose) System.err.println(platform.getHost() + " connection shut down");
             }
             httpGet.abort();
             httpGet.reset();

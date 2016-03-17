@@ -4,6 +4,8 @@ import graphhopper.client.demo.Main;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,7 @@ public class Monkey extends Thread {
     boolean verbose = false;
 
     MonkeyDisplay monkeyDisplay;
+    ResultsDisplay resultsDisplay;
 
     public Monkey(String hostListFile, int type) {
         this.type = type;
@@ -44,14 +47,13 @@ public class Monkey extends Thread {
             for (String host : containersByHost.keySet()) {
                 containersByHost.get(host).addAll(getContainers(host));
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
         matchContainers();
         unpauseAll();
         monkeyDisplay = new MonkeyDisplay(this);
+        resultsDisplay = new ResultsDisplay();
     }
 
     public void matchContainers() {
@@ -106,14 +108,6 @@ public class Monkey extends Thread {
         return result;
     }
 
-    public void processPrintout(Process p) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line = "";
-        while ((line = br.readLine()) != null) {
-            System.out.println(line);
-        }
-    }
-
     public void twelveLittleMonkeys(double ratio) {
         Process p;
         int pausedContainersNumber = (int) (Main.allPlatforms.size() * ratio);
@@ -160,23 +154,20 @@ public class Monkey extends Thread {
             for (String host : hosts) {
                 if (containersByHost.get(host).contains(containers.get(i))) {
                     monkeyDisplay.switchPlatform(containers.get(i), false);
-                    try {
-                        //p = Runtime.getRuntime().exec("ssh -t -t obarais@" + host + " sudo iptables -A INPUT -p tcp -m tcp --dport " + port + " -j DROP");
-                        if (host.equals("localhost") || host.equals("127.0.0.1")) {
-                            p = Runtime.getRuntime().exec("docker pause " + containers.get(i));
-                        } else {
-                            p = Runtime.getRuntime().exec("ssh -t -t " + host + /*" sudo*/" docker pause " + containers.get(i));
-                        }
-                        p.waitFor();
-                        pausedContainersByHost.get(host).add(containers.get(i));
-                        //processPrintout(p);
-                        //System.out.println(containers.get(i) + "@" + host + " paused");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    pausedContainersByHost.get(host).add(containers.get(i));
                 }
+            }
+        }
+        for(String host : pausedContainersByHost.keySet()) {
+            try {
+                if (host.equals("localhost") || host.equals("127.0.0.1")) {
+                    p = Runtime.getRuntime().exec("docker pause " + pausedContainersByHost.get(host).stream().collect(Collectors.joining(" ")));
+                } else {
+                    p = Runtime.getRuntime().exec("ssh -t -t " + host + " docker pause " + pausedContainersByHost.get(host).stream().collect(Collectors.joining(" ")));
+                }
+                p.waitFor();
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
             }
         }
         if (verbose) System.out.println("Paused " + pausedContainersByHost.values());
@@ -292,10 +283,35 @@ public class Monkey extends Thread {
     }
 
     public void specialMonkeyRun() {
-        ratio = ((double)(Main.tick / 50)) * 10 / 100;
+        ratio = ((double)(Main.tick / 100)) * 10 / 100;
         Info.getInstance().setMonkeyRatio(Main.tick, ratio);
+        updateResultsDisplay();
         twelveLittleMonkeys(ratio);
         newTick = false;
+    }
+
+    public void updateResultsDisplay() {
+        if(Main.tick > 0) {
+            int tick = Main.tick - 1;
+            resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getDeadClientsRate(tick) * 100);
+            resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getRequestFailureNumber(tick));
+            resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getTotalOfferedServicesNumber(tick));
+            if (Info.getInstance().addedCSVData1 != null) {
+                if(Info.getInstance().addedCSVData1.get("DeadClientsRatio").get(tick) != null) {
+                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("DeadClientsRatio").get(tick) * 100);
+                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("RequestRetries").get(tick));
+                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("TotalServices").get(tick));
+                }
+            }
+            if (Info.getInstance().addedCSVData2 != null) {
+                if(Info.getInstance().addedCSVData2.get("DeadClientsRatio").get(tick) != null) {
+                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("DeadClientsRatio").get(tick) * 100);
+                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("RequestRetries").get(tick));
+                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("TotalServices").get(tick));
+                }
+            }
+            resultsDisplay.update();
+        }
     }
 
     synchronized void startWait() {

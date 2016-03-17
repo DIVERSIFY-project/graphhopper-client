@@ -175,7 +175,6 @@ public class Info {
                 data.put("csvservice2", valueTimeMap);
             }
         }
-        System.out.println(data);
         return data;
     }
 

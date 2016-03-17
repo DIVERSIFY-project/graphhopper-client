@@ -1,6 +1,7 @@
 package graphhopper.client;
 
 import graphhopper.client.demo.Main;
+import org.jfree.ui.RefineryUtilities;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -25,7 +26,7 @@ public class MonkeyDisplay extends JFrame{
         panelByContainer = new LinkedHashMap<>();
         init();
         setTitle("Monkey display");
-        setLocation(200, 200);
+        RefineryUtilities.centerFrameOnScreen(this);
         setSize(400, 400);
         setVisible(true);
     }
