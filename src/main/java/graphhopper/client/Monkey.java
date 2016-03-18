@@ -293,21 +293,21 @@ public class Monkey extends Thread {
     public void updateResultsDisplay() {
         if(Main.tick > 0) {
             int tick = Main.tick - 1;
-            resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getDeadClientsRate(tick) * 100);
-            resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getRequestFailureNumber(tick));
-            resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[0], tick, ratio * 100, Info.getInstance().getTotalOfferedServicesNumber(tick));
+            resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[0], ratio * 100, Info.getInstance().getDeadClientsRate(tick) * 100);
+            resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[0], ratio * 100, Info.getInstance().getRequestFailureNumber(tick));
+            resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[0], ratio * 100, Info.getInstance().getTotalOfferedServicesNumber(tick));
             if (Info.getInstance().addedCSVData1 != null) {
                 if(Info.getInstance().addedCSVData1.get("DeadClientsRatio").get(tick) != null) {
-                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("DeadClientsRatio").get(tick) * 100);
-                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("RequestRetries").get(tick));
-                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[1], tick, ratio * 100, Info.getInstance().addedCSVData1.get("TotalServices").get(tick));
+                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[1], ratio * 100, Info.getInstance().addedCSVData1.get("DeadClientsRatio").get(tick) * 100);
+                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[1], ratio * 100, Info.getInstance().addedCSVData1.get("RequestRetries").get(tick));
+                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[1], ratio * 100, Info.getInstance().addedCSVData1.get("TotalServices").get(tick));
                 }
             }
             if (Info.getInstance().addedCSVData2 != null) {
                 if(Info.getInstance().addedCSVData2.get("DeadClientsRatio").get(tick) != null) {
-                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("DeadClientsRatio").get(tick) * 100);
-                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("RequestRetries").get(tick));
-                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[2], tick, ratio * 100, Info.getInstance().addedCSVData2.get("TotalServices").get(tick));
+                    resultsDisplay.addDeadClientsRatioData(ResultsDisplay.experiences[2], ratio * 100, Info.getInstance().addedCSVData2.get("DeadClientsRatio").get(tick) * 100);
+                    resultsDisplay.addRequestRetriesData(ResultsDisplay.experiences[2], ratio * 100, Info.getInstance().addedCSVData2.get("RequestRetries").get(tick));
+                    resultsDisplay.addTotalServicesData(ResultsDisplay.experiences[2], ratio * 100, Info.getInstance().addedCSVData2.get("TotalServices").get(tick));
                 }
             }
             resultsDisplay.update();
